@@ -4,7 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'Eagles Without Borders') }}</title>
+        <title>{{ config('app.name', "Eagles Without Borders") }}</title>
+
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
@@ -41,6 +43,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <a href="/" class="flex items-center gap-2">
+                        <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
                         <span class="text-amber-500 font-extrabold text-xl tracking-tight">Eagles</span>
                         <span class="text-white/70 font-light hidden sm:inline">Without Borders</span>
                     </a>
@@ -97,15 +100,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
                             </svg>
                         </a>
-                        <a
-                            href="#steps"
-                            class="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl border border-white/20 hover:bg-white/5 text-white font-semibold text-base transition-all"
-                        >
-                            Learn More
-                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </a>
+
                     </div>
                 </div>
             </div>
@@ -317,6 +312,13 @@
                         <span class="text-white/50 font-light">Without Borders</span>
                     </div>
                     <div class="flex items-center gap-4">
+                        <a href="https://www.facebook.com/groups/863084874785698" target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-blue-400 transition-colors" title="Facebook Group">
+                            <svg class="size-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+                            </svg>
+                        </a>
+                        <img src="{{ asset('images/logo.png') }}" alt="" class="h-6 w-auto opacity-50">
+                        <span class="text-gray-700">|</span>
                         <a href="{{ route('login') }}" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">
                             Admin Login
                         </a>

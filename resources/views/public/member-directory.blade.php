@@ -6,6 +6,8 @@
 
         <title>{{ __('Member Directory') }} - {{ config('app.name', 'Eagles Without Borders') }}</title>
 
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
 
@@ -28,6 +30,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <a href="/" class="flex items-center gap-2">
+                        <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
                         <span class="text-amber-500 font-extrabold text-xl tracking-tight">Eagles</span>
                         <span class="text-white/70 font-light hidden sm:inline">Without Borders</span>
                     </a>
@@ -93,7 +96,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 @forelse($regions as $region)
                     <!-- Region -->
-                    <div class="mb-16 last:mb-0">
+                    <div class="{{ $loop->first ? 'mt-8 ' : '' }}mb-16 last:mb-0">
                         <div class="flex items-center gap-3 mb-8">
                             <div class="size-3 rounded-full bg-amber-500"></div>
                             <h2 class="text-2xl sm:text-3xl font-bold text-white">
@@ -130,10 +133,10 @@
                                                         <img
                                                             src="{{ $member->profile_picture_url }}"
                                                             alt="{{ $member->name }}"
-                                                            class="size-10 shrink-0 rounded-full object-cover border border-amber-500/20"
+                                                            class="size-10 shrink-0 rounded object-cover border border-amber-500/20"
                                                         >
                                                     @else
-                                                        <div class="size-10 shrink-0 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-gray-950 font-bold text-sm">
+                                                        <div class="size-10 shrink-0 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-gray-950 font-bold text-sm">
                                                             {{ substr($member->name, 0, 1) }}
                                                         </div>
                                                     @endif

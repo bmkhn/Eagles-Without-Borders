@@ -47,7 +47,7 @@ Route::get('/member-profile/{slug}', function (string $slug) {
 })->name('member.profile');
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return redirect()->route('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -113,11 +113,11 @@ Route::middleware(['auth', 'club.scope'])->prefix('admin')->group(function () {
         ]);
 
     Route::get('/member-directory', [\App\Http\Controllers\Admin\MemberController::class, 'directory'])
-        ->middleware('role:national-president')
+        ->middleware('role:national-president|club-president')
         ->name('admin.members.directory');
 
     Route::resource('members', \App\Http\Controllers\Admin\MemberController::class)
-        ->middleware('role:national-president')
+        ->middleware('role:national-president|club-president')
         ->except(['show'])
         ->names([
             'index' => 'admin.members.index',

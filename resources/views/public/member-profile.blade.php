@@ -13,6 +13,8 @@
 
         <title>{{ $member->name }} - {{ config('app.name', 'Eagles Without Borders') }}</title>
 
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
 
@@ -35,6 +37,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <a href="/" class="flex items-center gap-2">
+                        <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
                         <span class="text-amber-500 font-extrabold text-xl tracking-tight">Eagles</span>
                         <span class="text-white/70 font-light hidden sm:inline">Without Borders</span>
                     </a>
@@ -60,10 +63,6 @@
         <!-- Main Content -->
         <section class="py-16">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                @php
-                    $profileUrl = route('member.profile', $member->slug);
-                @endphp
-
                 <div class="profile-card">
                     <!-- Back link -->
                     <a href="{{ route('member.directory') }}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-amber-400 transition-colors mb-8">
@@ -152,31 +151,6 @@
                                             </div>
                                         </div>
                                     @endif
-                                </div>
-
-                                <!-- QR Code -->
-                                <div class="shrink-0">
-                                    <div class="bg-white/5 rounded-2xl p-6 border border-white/10 text-center">
-                                        @if($member->qr_code_url)
-                                            <img
-                                                src="{{ $member->qr_code_url }}"
-                                                alt="QR Code for {{ $member->name }}"
-                                                class="mx-auto w-44 h-44"
-                                            >
-                                        @else
-                                            <div class="mx-auto w-44 h-44 flex items-center justify-center bg-white/5 rounded-xl">
-                                                <p class="text-xs text-gray-600">{{ __('No QR code') }}</p>
-                                            </div>
-                                        @endif
-                                        <p class="mt-3 text-xs text-gray-500">
-                                            {{ __('Scan to open profile') }}
-                                        </p>
-                                        <div class="mt-3">
-                                            <a href="{{ $profileUrl }}" target="_blank" rel="noopener" class="text-xs text-amber-500 hover:text-amber-400 break-all transition-colors">
-                                                {{ $profileUrl }}
-                                            </a>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
