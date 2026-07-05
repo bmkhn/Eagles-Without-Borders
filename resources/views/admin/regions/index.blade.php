@@ -66,6 +66,7 @@
                         <x-table-head>
                             <tr>
                                 <x-table-column>{{ __('Name') }}</x-table-column>
+                                <x-table-column>{{ __('Clubs') }}</x-table-column>
                                 <x-table-column class="text-right">{{ __('Actions') }}</x-table-column>
                             </tr>
                         </x-table-head>
@@ -77,6 +78,16 @@
                                         {{ $region->name }}
                                     </td>
 
+                                    <td class="px-3 py-3.5 text-sm text-gray-700">
+                                        @if($region->clubs_count > 0)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                                {{ $region->clubs_count }} {{ Str::plural('club', $region->clubs_count) }}
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400">—</span>
+                                        @endif
+                                    </td>
+
                                     <td class="px-3 py-3.5 text-sm text-right">
                                         <div class="inline-flex gap-2">
                                             <a
@@ -86,17 +97,26 @@
                                                 {{ __('Edit') }}
                                             </a>
 
-                                            <form method="POST" action="{{ route('admin.regions.destroy', $region) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button
-                                                    type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-semibold hover:bg-red-100"
-                                                    onclick="return confirm('{{ __('Are you sure you want to delete this region?') }}')"
+                                            @if($region->clubs_count > 0)
+                                                <span
+                                                    class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-400 border border-gray-200 rounded-md text-xs font-semibold cursor-not-allowed"
+                                                    title="{{ __('Cannot delete: :count :club(s) are assigned to this region.', ['count' => $region->clubs_count, 'club' => Str::plural('club', $region->clubs_count)]) }}"
                                                 >
                                                     {{ __('Delete') }}
-                                                </button>
-                                            </form>
+                                                </span>
+                                            @else
+                                                <form method="POST" action="{{ route('admin.regions.destroy', $region) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-semibold hover:bg-red-100"
+                                                        onclick="return confirm('{{ __('Are you sure you want to delete this region?') }}')"
+                                                    >
+                                                        {{ __('Delete') }}
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
