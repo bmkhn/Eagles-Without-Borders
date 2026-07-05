@@ -18,7 +18,29 @@ class Member extends Model
         'name',
         'slug',
         'contact_number',
+        'profile_picture',
+        'qr_code',
     ];
+
+    protected $appends = ['profile_picture_url', 'qr_code_url'];
+
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        if (!$this->profile_picture) {
+            return null;
+        }
+
+        return asset('storage/' . $this->profile_picture);
+    }
+
+    public function getQrCodeUrlAttribute(): ?string
+    {
+        if (!$this->qr_code) {
+            return null;
+        }
+
+        return asset('storage/' . $this->qr_code);
+    }
 
     protected static function normalizeNameForSimilarity(string $name): string
     {
