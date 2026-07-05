@@ -6,7 +6,6 @@ use App\Models\Club;
 use App\Models\Member;
 use App\Models\Position;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
 
 class MemberSeeder extends Seeder
 {
@@ -20,96 +19,72 @@ class MemberSeeder extends Seeder
             return;
         }
 
-        // Seed positions if none exist
         if ($positions->isEmpty()) {
-            $positionNames = ['President', 'Vice President', 'Secretary', 'Treasurer', 'Auditor'];
-
-            foreach ($positionNames as $name) {
-                Position::firstOrCreate(['name' => $name]);
-            }
-
-            $positions = Position::all();
-            $this->command->info('Created positions: ' . $positions->pluck('name')->implode(', '));
+            $this->command->warn('No positions found. Skipping Member seeder.');
+            return;
         }
 
-        $membersData = [
-            ['name' => 'Alice Johnson', 'contact' => '09171234567'],
-            ['name' => 'Bob Smith', 'contact' => '09171234568'],
-            ['name' => 'Carol Williams', 'contact' => '09171234569'],
+        $memberNames = [
+            'Juan Dela Cruz',
+            'Maria Santos',
+            'Jose Rizal',
+            'Ana Gonzales',
+            'Pedro Reyes',
+            'Elena Bautista',
+            'Carlos Miranda',
+            'Sofia Villanueva',
+            'Antonio Garcia',
+            'Luisa Fernandez',
+            'Miguel Lopez',
+            'Carmen Navarro',
+            'Ramon Torres',
+            'Isabella Rivera',
+            'Francisco Ramos',
+            'Angela Mendoza',
+            'Manuel Castro',
+            'Patricia Ortega',
+            'Emilio Silva',
+            'Teresa Cruz',
         ];
 
-        foreach ($clubs as $club) {
-            foreach ($membersData as $index => $data) {
-                $position = $positions->get($index % $positions->count());
+        $baseContact = '09170000000';
 
-                // Check if member already exists for this club
+        foreach ($clubs as $clubIndex => $club) {
+            $createdCount = 0;
+
+            for ($i = 0; $i < 10; $i++) {
+                $nameIndex = ($clubIndex * 10 + $i) % count($memberNames);
+                $name = $memberNames[$nameIndex];
+
+                $contactNumber = '0917' . str_pad((string)($clubIndex * 10 + $i + 1), 7, '0', STR_PAD_LEFT);
+
+                // Check if member already exists for this club with a matching name or contact
                 $existing = Member::where('club_id', $club->id)
-                    ->where('name', $data['name'])
+                    ->where(function ($q) use ($name, $contactNumber) {
+                        $q->where('name', $name)
+                          ->orWhere('contact_number', $contactNumber);
+                    })
                     ->first();
 
                 if ($existing) {
                     continue;
                 }
 
-                // Create with slug included
+                $position = $positions->get($i % $positions->count());
+
                 $member = new Member([
                     'club_id' => $club->id,
                     'position_id' => $position->id,
-                    'name' => $data['name'],
-                    'contact_number' => $data['contact'],
+                    'name' => $name,
+                    'contact_number' => $contactNumber,
                 ]);
 
                 $member->applySlugFromName();
                 $member->save();
-
-                // Generate QR code for the member
-                $this->generateQrCode($member);
+                $createdCount++;
             }
 
-            $this->command->info("Created members for club: {$club->name}");
-        }
-
-        // Backfill QR codes for any existing members that don't have one
-        $membersWithoutQr = Member::whereNull('qr_code')->get();
-
-        if ($membersWithoutQr->isNotEmpty()) {
-            $this->command->info('Generating QR codes for ' . $membersWithoutQr->count() . ' existing members without QR codes...');
-
-            foreach ($membersWithoutQr as $member) {
-                $this->generateQrCode($member);
-            }
-
-            $this->command->info('QR codes generated for existing members.');
-        }
-    }
-
-    public function generateQrCode(Member $member): void
-    {
-        try {
-            $profileUrl = route('member.profile', $member->slug);
-
-            $qrSvg = app('qrcode')
-                ->size(300)
-                ->margin(5)
-                ->color(245, 158, 11)
-                ->backgroundColor(0, 0, 0, 0)
-                ->generate($profileUrl);
-
-            $filename = 'qr_' . $member->id . '_' . uniqid() . '.svg';
-            $path = 'qr-codes/' . $filename;
-
-            Storage::disk('public')->put($path, (string) $qrSvg);
-
-            // Delete old QR code if exists
-            if ($member->qr_code) {
-                Storage::disk('public')->delete($member->qr_code);
-            }
-
-            $member->updateQuietly(['qr_code' => $path]);
-
-            return;
-        } catch (\Exception $e) {
-            $this->command->warn("Could not generate QR code for member {$member->name}: {$e->getMessage()}");
+            $this->command->info("Created {$createdCount} members for club: {$club->name}");
         }
     }
 }
