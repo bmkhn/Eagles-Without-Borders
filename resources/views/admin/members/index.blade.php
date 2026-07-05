@@ -78,37 +78,37 @@
                         <x-table-row>
                             @foreach($members as $member)
                                 <tr class="bg-white border-b border-gray-200">
-                                    <td class="px-3 py-3.5 text-sm text-gray-900">
+                                    <td class="px-3 py-3.5 text-sm text-gray-900 dark:text-gray-100">
                                         @if($member->profile_picture_url)
                                             <img
                                                 src="{{ $member->profile_picture_url }}"
                                                 alt="{{ $member->name }}"
-                                                class="size-9 rounded-full object-cover border border-gray-200"
+                                                class="size-9 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                                             >
                                         @else
-                                            <span class="inline-flex items-center justify-center size-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                                            <span class="inline-flex items-center justify-center size-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-bold text-xs">
                                                 {{ substr($member->name, 0, 1) }}
                                             </span>
                                         @endif
                                     </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-900">
+                                    <td class="px-3 py-3.5 text-sm text-gray-900 dark:text-gray-100">
                                         {{ $member->name }}
                                     </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-700">
+                                    <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
                                         {{ $member->club?->name }}
                                     </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-700">
+                                    <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
                                         {{ $member->position?->name }}
                                     </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-700">
+                                    <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
                                         {{ $member->contact_number }}
                                     </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-500 font-mono">
+                                    <td class="px-3 py-3.5 text-sm text-gray-500 dark:text-gray-400 font-mono">
                                         {{ $member->slug }}
                                     </td>
 
@@ -116,7 +116,7 @@
                                         <div class="inline-flex gap-2">
                                             <a
                                                 href="{{ route('admin.members.edit', $member) }}"
-                                                class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-semibold hover:bg-indigo-100"
+                                                class="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                                             >
                                                 {{ __('Edit') }}
                                             </a>
@@ -126,7 +126,7 @@
                                                 @method('DELETE')
                                                 <button
                                                     type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-semibold hover:bg-red-100"
+                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/50"
                                                     onclick="return confirm('{{ __('Are you sure you want to delete this member?') }}')"
                                                 >
                                                     {{ __('Delete') }}

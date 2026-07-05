@@ -48,28 +48,28 @@
 
             <!-- Directory Content -->
             @forelse($regions as $region)
-                <div class="mb-10 last:mb-0">
+                <div class="mt-8 mb-10 last:mb-0">
                     <div class="flex items-center gap-2 mb-4">
                         <div class="size-3 rounded-full bg-indigo-500"></div>
-                        <h3 class="text-lg font-bold text-gray-900">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                             {{ $region->name }}
                         </h3>
-                        <span class="text-sm text-gray-500">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
                             ({{ $region->clubs->sum(fn($c) => $c->members->count()) }} {{ Str::plural('member', $region->clubs->sum(fn($c) => $c->members->count())) }})
                         </span>
                     </div>
 
                     @forelse($region->clubs as $club)
-                        <div class="ml-6 mb-6 last:mb-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <div class="ml-6 mb-6 last:mb-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div class="bg-gray-50 dark:bg-gray-800/50 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center gap-2">
-                                    <svg class="size-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="size-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                     </svg>
-                                    <h4 class="font-semibold text-gray-800 text-sm">
+                                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                                         {{ $club->name }}
                                     </h4>
-                                    <span class="text-xs text-gray-500">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">
                                         ({{ $club->members->count() }} {{ Str::plural('member', $club->members->count()) }})
                                     </span>
                                 </div>
@@ -78,26 +78,26 @@
                             @if($club->members->count() > 0)
                                 <div class="divide-y divide-gray-100">
                                     @foreach($club->members as $member)
-                                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                             <div class="shrink-0">
                                                 @if($member->profile_picture_url)
                                                     <img
                                                         src="{{ $member->profile_picture_url }}"
                                                         alt="{{ $member->name }}"
-                                                        class="size-9 rounded-full object-cover border border-gray-200"
+                                                        class="size-9 rounded-lg object-cover border border-gray-200"
                                                     >
                                                 @else
-                                                    <span class="inline-flex items-center justify-center size-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                                                    <span class="inline-flex items-center justify-center size-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-bold text-xs">
                                                         {{ substr($member->name, 0, 1) }}
                                                     </span>
                                                 @endif
                                             </div>
 
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-900 truncate">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                                     {{ $member->name }}
                                                 </p>
-                                                <p class="text-xs text-gray-500 truncate">
+                                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                                                     @if($member->position)
                                                         {{ $member->position->name }}
                                                     @endif
@@ -113,7 +113,7 @@
                                             <a
                                                 href="{{ route('member.profile', $member->slug) }}"
                                                 target="_blank"
-                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 transition-colors"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                                             >
                                                 {{ __('View') }}
                                                 <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

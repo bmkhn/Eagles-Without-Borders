@@ -12,6 +12,7 @@ use App\Models\Position;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
@@ -19,11 +20,17 @@ class MemberController extends Controller
 {
     public function index(): View
     {
+        $user = request()->user();
         $q = request()->string('q')->trim()->toString();
 
         $membersQuery = Member::query()
             ->with(['club', 'position'])
             ->orderBy('name');
+
+        // Club presidents are scoped to their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $membersQuery->where('club_id', $user->club_id);
+        }
 
         if ($q !== '') {
             $membersQuery->where(function ($query) use ($q) {
@@ -43,7 +50,30 @@ class MemberController extends Controller
 
     public function directory(): View
     {
+        $user = request()->user();
         $q = request()->string('q')->trim()->toString();
+
+        // Club presidents are scoped to their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $club = \App\Models\Club::with(['region', 'members' => function ($query) use ($q) {
+                $query->with('position')->orderBy('name');
+
+                if ($q !== '') {
+                    $query->where(function ($memberQuery) use ($q) {
+                        $memberQuery->where('name', 'like', '%' . $q . '%')
+                            ->orWhere('contact_number', 'like', '%' . $q . '%');
+                    });
+                }
+            }])->findOrFail($user->club_id);
+
+            $region = $club->region;
+            $region->setRelation('clubs', collect([$club]));
+
+            return view('admin.members.directory', [
+                'regions' => collect([$region]),
+                'q' => $q,
+            ]);
+        }
 
         $regions = Region::query()
             ->with(['clubs' => function ($query) use ($q) {
@@ -78,15 +108,33 @@ class MemberController extends Controller
 
     public function create(): View
     {
+        $user = request()->user();
+
+        // Club presidents can only create members for their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $clubs = Club::query()->where('id', $user->club_id)->get();
+        } else {
+            $clubs = Club::query()->orderBy('name')->get();
+        }
+
         return view('admin.members.create', [
-            'clubs' => Club::query()->orderBy('name')->get(),
+            'clubs' => $clubs,
             'positions' => Position::query()->orderBy('name')->get(),
         ]);
     }
 
     public function store(MemberStoreRequest $request): RedirectResponse
     {
-        $member = new Member($request->safe()->except(['profile_picture']));
+        $user = request()->user();
+
+        $data = $request->safe()->except(['profile_picture']);
+
+        // Club presidents can only create members for their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $data['club_id'] = $user->club_id;
+        }
+
+        $member = new Member($data);
         $member->applySlugFromName();
 
         if ($request->hasFile('profile_picture')) {
@@ -95,9 +143,6 @@ class MemberController extends Controller
 
         $member->save();
 
-        // Generate QR code after save so the member has an ID
-        $this->generateQrCode($member);
-
         return redirect()
             ->route('admin.members.index')
             ->with('success', 'Member created successfully.');
@@ -105,16 +150,34 @@ class MemberController extends Controller
 
     public function edit(Member $member): View
     {
+        $user = request()->user();
+
+        // Club presidents can only edit members for their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $clubs = Club::query()->where('id', $user->club_id)->get();
+        } else {
+            $clubs = Club::query()->orderBy('name')->get();
+        }
+
         return view('admin.members.edit', [
             'member' => $member->load(['club', 'position']),
-            'clubs' => Club::query()->orderBy('name')->get(),
+            'clubs' => $clubs,
             'positions' => Position::query()->orderBy('name')->get(),
         ]);
     }
 
     public function update(MemberUpdateRequest $request, Member $member): RedirectResponse
     {
-        $member->fill($request->safe()->except(['profile_picture', 'remove_photo']));
+        $user = request()->user();
+
+        $data = $request->safe()->except(['profile_picture', 'remove_photo']);
+
+        // Club presidents can only update members for their own club
+        if ($user->hasRole('club-president') && $user->club_id) {
+            $data['club_id'] = $user->club_id;
+        }
+
+        $member->fill($data);
         $member->applySlugFromName();
 
         if ($request->hasFile('profile_picture')) {
@@ -132,9 +195,6 @@ class MemberController extends Controller
 
         $member->save();
 
-        // Regenerate QR code (URL may have changed if slug changed)
-        $this->generateQrCode($member);
-
         return redirect()
             ->route('admin.members.index')
             ->with('success', 'Member updated successfully.');
@@ -147,11 +207,6 @@ class MemberController extends Controller
             Storage::disk('public')->delete($member->profile_picture);
         }
 
-        // Delete QR code
-        if ($member->qr_code) {
-            Storage::disk('public')->delete($member->qr_code);
-        }
-
         $member->delete();
 
         return redirect()
@@ -162,7 +217,7 @@ class MemberController extends Controller
     private function uploadProfilePicture($file): string
     {
         $manager = new ImageManager(new Driver());
-        $image = $manager->read($file);
+        $image = $manager->decode($file);
 
         // Resize to 300x300 while maintaining aspect ratio and cropping
         $image->cover(300, 300);
@@ -170,34 +225,12 @@ class MemberController extends Controller
         $filename = uniqid('profile_') . '.webp';
         $path = 'profile-pictures/' . $filename;
 
-        // Encode as webp and store
-        $encoded = $image->toWebp(80);
+        // Encode as webp at 80% quality and store
+        $encoded = $image->encode(new WebpEncoder(quality: 80));
         Storage::disk('public')->put($path, $encoded);
 
         return $path;
     }
 
-    private function generateQrCode(Member $member): void
-    {
-        $profileUrl = route('member.profile', $member->slug);
 
-        $qrSvg = app('qrcode')
-            ->size(300)
-            ->margin(5)
-            ->color(245, 158, 11)
-            ->backgroundColor(0, 0, 0, 0)
-            ->generate($profileUrl);
-
-        $filename = 'qr_' . $member->id . '_' . uniqid() . '.svg';
-        $path = 'qr-codes/' . $filename;
-
-        Storage::disk('public')->put($path, (string) $qrSvg);
-
-        // Delete old QR code if exists
-        if ($member->qr_code) {
-            Storage::disk('public')->delete($member->qr_code);
-        }
-
-        $member->updateQuietly(['qr_code' => $path]);
-    }
 }
