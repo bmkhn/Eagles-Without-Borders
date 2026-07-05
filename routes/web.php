@@ -59,6 +59,22 @@ Route::middleware('auth')->prefix('admin')->group(function () {
         'destroy' => 'admin.clubs.destroy',
     ]);
 
+    Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class)->only([
+        'index',
+        'create',
+        'store',
+        'edit',
+        'update',
+        'destroy',
+    ])->names([
+        'index' => 'admin.positions.index',
+        'create' => 'admin.positions.create',
+        'store' => 'admin.positions.store',
+        'edit' => 'admin.positions.edit',
+        'update' => 'admin.positions.update',
+        'destroy' => 'admin.positions.destroy',
+    ]);
+
     Route::get('/{any}', function () {
         return view('admin.*');
     })->where('any', '.*')->name('admin.catchall');
