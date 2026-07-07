@@ -17,14 +17,18 @@ return new class extends Migration
             $table->foreignId('club_id')->constrained('clubs')->cascadeOnDelete();
             $table->foreignId('position_id')->constrained('positions')->cascadeOnDelete();
 
-            $table->string('name');
+            $table->string('first_name');
+            $table->string('middle_initial', 10)->nullable();
+            $table->string('last_name');
+            $table->string('suffix', 50)->nullable();
+            $table->string('status', 20)->default('active');
             $table->string('slug');
             $table->string('contact_number');
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['club_id', 'position_id', 'name']);
+            $table->unique(['club_id', 'position_id', 'first_name', 'last_name']);
             $table->unique(['club_id', 'slug']);
             $table->index(['club_id', 'contact_number']);
         });

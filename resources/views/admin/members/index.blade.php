@@ -67,6 +67,7 @@
                             <tr>
                                 <x-table-column>{{ __('Photo') }}</x-table-column>
                                 <x-table-column>{{ __('Name') }}</x-table-column>
+                                <x-table-column>{{ __('Status') }}</x-table-column>
                                 <x-table-column>{{ __('Club') }}</x-table-column>
                                 <x-table-column>{{ __('Position') }}</x-table-column>
                                 <x-table-column>{{ __('Contact') }}</x-table-column>
@@ -94,6 +95,20 @@
 
                                     <td class="px-3 py-3.5 text-sm text-gray-900 dark:text-gray-100">
                                         {{ $member->name }}
+                                    </td>
+
+                                    <td class="px-3 py-3.5 text-sm">
+                                        @if($member->status === 'active')
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                                <span class="size-1.5 rounded-full bg-green-500"></span>
+                                                {{ __('Active') }}
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                <span class="size-1.5 rounded-full bg-gray-400"></span>
+                                                {{ __('Inactive') }}
+                                            </span>
+                                        @endif
                                     </td>
 
                                     <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">

@@ -18,15 +18,19 @@ class MemberStoreRequest extends FormRequest
         return [
             'club_id' => ['required', 'integer', 'exists:clubs,id'],
             'position_id' => ['required', 'integer', 'exists:positions,id'],
-            'name' => [
+            'first_name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique(Member::class)->where(function ($query) {
-                    return $query->where('club_id', $this->club_id)
-                        ->where('position_id', $this->position_id);
-                }),
             ],
+            'middle_initial' => ['nullable', 'string', 'max:10'],
+            'last_name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+            'suffix' => ['nullable', 'string', 'max:50'],
+            'status' => ['sometimes', 'string', 'in:active,inactive'],
             'contact_number' => ['required', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ];

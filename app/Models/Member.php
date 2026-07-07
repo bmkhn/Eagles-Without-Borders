@@ -15,13 +15,34 @@ class Member extends Model
     protected $fillable = [
         'club_id',
         'position_id',
-        'name',
+        'first_name',
+        'middle_initial',
+        'last_name',
+        'suffix',
+        'status',
         'slug',
         'contact_number',
         'profile_picture',
     ];
 
-    protected $appends = ['profile_picture_url'];
+    protected $appends = ['profile_picture_url', 'name'];
+
+    public function getNameAttribute(): string
+    {
+        $parts = [$this->first_name];
+
+        if ($this->middle_initial) {
+            $parts[] = $this->middle_initial . '.';
+        }
+
+        $parts[] = $this->last_name;
+
+        if ($this->suffix) {
+            $parts[] = $this->suffix;
+        }
+
+        return implode(' ', $parts);
+    }
 
     public function getProfilePictureUrlAttribute(): ?string
     {
@@ -30,15 +51,6 @@ class Member extends Model
         }
 
         return asset('storage/' . $this->profile_picture);
-    }
-
-    protected static function normalizeNameForSimilarity(string $name): string
-    {
-        // Lowercase, trim, collapse whitespace.
-        $normalized = mb_strtolower(trim($name));
-        $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
-
-        return $normalized;
     }
 
     protected static function slugify(string $value): string
@@ -59,9 +71,9 @@ class Member extends Model
      * Generate unique slug with collision handling.
      * Soft-deleted members are ignored for collision checks (recommended).
      */
-    public static function generateUniqueSlug(string $name, int $clubId, ?int $ignoreMemberId = null): string
+    public static function generateUniqueSlug(string $firstName, string $lastName, int $clubId, ?int $ignoreMemberId = null): string
     {
-        $base = static::slugify($name);
+        $base = static::slugify($firstName . ' ' . $lastName);
 
         if ($base === '') {
             $base = 'member';
@@ -101,11 +113,11 @@ class Member extends Model
     }
 
     /**
-     * Instance helper to populate slug from name.
+     * Instance helper to populate slug from name parts.
      */
     public function applySlugFromName(): void
     {
-        $this->slug = static::generateUniqueSlug($this->name, (int) $this->club_id, $this->id);
+        $this->slug = static::generateUniqueSlug($this->first_name, $this->last_name, (int) $this->club_id, $this->id);
     }
 
     /**
@@ -113,18 +125,17 @@ class Member extends Model
      *
      * Duplicate rules:
      * - exact contact_number match
-     * - exact/similar name after normalization (case-insensitive, collapsed whitespace)
+     * - exact/similar first_name + last_name after normalization
      *
      * Soft-deleted members are ignored (default Eloquent behavior).
      */
     public static function findPotentialDuplicates(
         int $clubId,
-        string $name,
+        string $firstName,
+        string $lastName,
         ?string $contactNumber,
         ?int $ignoreMemberId = null
     ) {
-        $normalizedName = static::normalizeNameForSimilarity($name);
-
         $q = static::query()->where('club_id', $clubId);
 
         if ($ignoreMemberId) {
@@ -133,33 +144,32 @@ class Member extends Model
 
         // Exact contact number match (if provided)
         if ($contactNumber !== null && trim($contactNumber) !== '') {
-            $q->where(function ($sub) use ($contactNumber, $normalizedName) {
+            $q->where(function ($sub) use ($contactNumber, $firstName, $lastName) {
                 $sub->where('contact_number', $contactNumber)
-                    ->orWhereRaw(
-                        // Similar/exact name check using PHP-normalization results isn't stored in DB.
-                        // For "exact/similar" without extra columns, we match by lowercase+trim on DB side.
-                        // This keeps it model-only without requiring additional schema.
-                        'LOWER(TRIM(name)) = ?',
-                        [$normalizedName]
-                    );
+                    ->orWhere(function ($nameQ) use ($firstName, $lastName) {
+                        $nameQ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
+                              ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))]);
+                    });
             });
         } else {
-            $q->whereRaw('LOWER(TRIM(name)) = ?', [$normalizedName]);
+            $q->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
+              ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))]);
         }
 
         return $q->get();
     }
 
     /**
-     * Model-only payload intended for a "warning modal".
+     * Model-only payload intended for a \"warning modal\".
      */
     public static function duplicateWarningPayload(
         int $clubId,
-        string $name,
+        string $firstName,
+        string $lastName,
         ?string $contactNumber,
         ?int $ignoreMemberId = null
     ): array {
-        $duplicates = static::findPotentialDuplicates($clubId, $name, $contactNumber, $ignoreMemberId);
+        $duplicates = static::findPotentialDuplicates($clubId, $firstName, $lastName, $contactNumber, $ignoreMemberId);
 
         return [
             'message' => 'Potential duplicate members found',

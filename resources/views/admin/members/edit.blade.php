@@ -65,19 +65,94 @@
                             @enderror
                         </div>
 
-                        <div>
-                            <x-input-label for="name" :value="__('Name')" />
-                            <input
-                                id="name"
-                                name="name"
-                                type="text"
-                                value="{{ old('name', $member->name) }}"
-                                required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            />
-                            @error('name')
-                                <x-input-error class="mt-1" :messages="[$message]" />
-                            @enderror
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                            <div class="sm:col-span-2">
+                                <x-input-label for="first_name" :value="__('First Name')" />
+                                <input
+                                    id="first_name"
+                                    name="first_name"
+                                    type="text"
+                                    value="{{ old('first_name', $member->first_name) }}"
+                                    required
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+                                @error('first_name')
+                                    <x-input-error class="mt-1" :messages="[$message]" />
+                                @enderror
+                            </div>
+
+                            <div>
+                                <x-input-label for="middle_initial" :value="__('M.I.')" />
+                                <input
+                                    id="middle_initial"
+                                    name="middle_initial"
+                                    type="text"
+                                    value="{{ old('middle_initial', $member->middle_initial) }}"
+                                    maxlength="10"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="{{ __('(opt)') }}"
+                                />
+                                @error('middle_initial')
+                                    <x-input-error class="mt-1" :messages="[$message]" />
+                                @enderror
+                            </div>
+
+                            <div>
+                                <x-input-label for="suffix" :value="__('Suffix')" />
+                                <input
+                                    id="suffix"
+                                    name="suffix"
+                                    type="text"
+                                    value="{{ old('suffix', $member->suffix) }}"
+                                    maxlength="50"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    placeholder="{{ __('Jr., III, etc.') }}"
+                                />
+                                @error('suffix')
+                                    <x-input-error class="mt-1" :messages="[$message]" />
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="last_name" :value="__('Last Name')" />
+                                <input
+                                    id="last_name"
+                                    name="last_name"
+                                    type="text"
+                                    value="{{ old('last_name', $member->last_name) }}"
+                                    required
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                />
+                                @error('last_name')
+                                    <x-input-error class="mt-1" :messages="[$message]" />
+                                @enderror
+                            </div>
+
+                            <div>
+                                <x-input-label for="status" :value="__('Status')" />
+                                <label class="mt-2 relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="status" value="inactive">
+                                    <input
+                                        id="status"
+                                        name="status"
+                                        type="checkbox"
+                                        value="active"
+                                        class="sr-only peer"
+                                        {{ old('status', $member->status) === 'active' ? 'checked' : '' }}
+                                        onchange="updateStatusLabel(this)"
+                                    >
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
+                                    <span class="ms-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        <span class="status-label-active {{ old('status', $member->status) !== 'active' ? 'hidden' : '' }}">Active</span>
+                                        <span class="status-label-inactive {{ old('status', $member->status) === 'active' ? 'hidden' : '' }}">Inactive</span>
+                                    </span>
+                                </label>
+                                @error('status')
+                                    <x-input-error class="mt-1" :messages="[$message]" />
+                                @enderror
+                            </div>
                         </div>
 
                         <div>
@@ -129,6 +204,24 @@
                                 <x-input-error class="mt-1" :messages="[$message]" />
                             @enderror
                         </div>
+
+                        <script>
+                            function updateStatusLabel(checkbox) {
+                                const container = checkbox.closest('label');
+                                if (container) {
+                                    const activeLabel = container.querySelector('.status-label-active');
+                                    const inactiveLabel = container.querySelector('.status-label-inactive');
+                                    if (activeLabel && inactiveLabel) {
+                                        activeLabel.classList.toggle('hidden', !checkbox.checked);
+                                        inactiveLabel.classList.toggle('hidden', checkbox.checked);
+                                    }
+                                }
+                                const hiddenInput = checkbox.previousElementSibling;
+                                if (hiddenInput && hiddenInput.type === 'hidden') {
+                                    hiddenInput.value = checkbox.checked ? 'active' : 'inactive';
+                                }
+                            }
+                        </script>
 
                         <div class="flex items-center gap-3 pt-2">
                             <button

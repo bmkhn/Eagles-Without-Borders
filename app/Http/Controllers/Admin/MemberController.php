@@ -25,7 +25,7 @@ class MemberController extends Controller
 
         $membersQuery = Member::query()
             ->with(['club', 'position'])
-            ->orderBy('name');
+            ->orderBy('last_name')->orderBy('first_name');
 
         // Club presidents are scoped to their own club
         if ($user->hasRole('club-president') && $user->club_id) {
@@ -34,7 +34,8 @@ class MemberController extends Controller
 
         if ($q !== '') {
             $membersQuery->where(function ($query) use ($q) {
-                $query->where('name', 'like', '%' . $q . '%')
+                $query->where('first_name', 'like', '%' . $q . '%')
+                    ->orWhere('last_name', 'like', '%' . $q . '%')
                     ->orWhere('contact_number', 'like', '%' . $q . '%')
                     ->orWhere('slug', 'like', '%' . $q . '%');
             });
@@ -56,11 +57,12 @@ class MemberController extends Controller
         // Club presidents are scoped to their own club
         if ($user->hasRole('club-president') && $user->club_id) {
             $club = \App\Models\Club::with(['region', 'members' => function ($query) use ($q) {
-                $query->with('position')->orderBy('name');
+                $query->with('position')->orderBy('last_name')->orderBy('first_name');
 
                 if ($q !== '') {
                     $query->where(function ($memberQuery) use ($q) {
-                        $memberQuery->where('name', 'like', '%' . $q . '%')
+                        $memberQuery->where('first_name', 'like', '%' . $q . '%')
+                            ->orWhere('last_name', 'like', '%' . $q . '%')
                             ->orWhere('contact_number', 'like', '%' . $q . '%');
                     });
                 }
@@ -78,12 +80,13 @@ class MemberController extends Controller
         $regions = Region::query()
             ->with(['clubs' => function ($query) use ($q) {
                 $query->with(['members' => function ($memberQuery) use ($q) {
-                    $memberQuery->with('position')->orderBy('name');
+                    $memberQuery->with('position')->orderBy('last_name')->orderBy('first_name');
                 }])->orderBy('name');
 
                 if ($q !== '') {
                     $query->whereHas('members', function ($memberQuery) use ($q) {
-                        $memberQuery->where('name', 'like', '%' . $q . '%')
+                        $memberQuery->where('first_name', 'like', '%' . $q . '%')
+                            ->orWhere('last_name', 'like', '%' . $q . '%')
                             ->orWhere('contact_number', 'like', '%' . $q . '%');
                     });
                 }
@@ -136,6 +139,7 @@ class MemberController extends Controller
 
         $member = new Member($data);
         $member->applySlugFromName();
+        $member->status = $member->status ?? 'active';
 
         if ($request->hasFile('profile_picture')) {
             $member->profile_picture = $this->uploadProfilePicture($request->file('profile_picture'));

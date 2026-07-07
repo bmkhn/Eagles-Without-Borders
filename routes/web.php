@@ -13,12 +13,13 @@ Route::get('/member-directory', function () {
     $regions = \App\Models\Region::query()
         ->with(['clubs' => function ($query) use ($q) {
             $query->with(['members' => function ($memberQuery) use ($q) {
-                $memberQuery->with('position')->orderBy('name');
+                $memberQuery->with('position')->orderBy('last_name')->orderBy('first_name');
             }])->orderBy('name');
 
             if ($q !== '') {
                 $query->whereHas('members', function ($memberQuery) use ($q) {
-                    $memberQuery->where('name', 'like', '%' . $q . '%')
+                    $memberQuery->where('first_name', 'like', '%' . $q . '%')
+                        ->orWhere('last_name', 'like', '%' . $q . '%')
                         ->orWhere('contact_number', 'like', '%' . $q . '%');
                 });
             }
