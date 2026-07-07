@@ -4,13 +4,6 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        @php
-            $member = \App\Models\Member::query()
-                ->with(['position', 'club.region', 'certificates'])
-                ->where('slug', $slug)
-                ->firstOrFail();
-        @endphp
-
         <title>{{ $member->name }} - {{ config('app.name', 'Eagles Without Borders') }}</title>
 
         <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">

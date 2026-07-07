@@ -7,9 +7,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/member-profile/{slug}', function (string $slug) {
-    return view('public.member-profile', ['slug' => $slug]);
-})->name('member.profile');
+Route::get('/member-profile/{slug}', [\App\Http\Controllers\MemberProfileController::class, 'show'])
+    ->name('member.profile');
 
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');

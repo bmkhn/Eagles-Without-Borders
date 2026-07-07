@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>{{ __('Renew Membership') }} - {{ config('app.name', 'Eagles Without Borders') }}</title>
+
+        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
+
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <style>
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .renew-card {
+                animation: fadeInUp 0.5s ease-out forwards;
+            }
+        </style>
+    </head>
+
+    <body class="font-sans antialiased bg-gray-950 text-white min-h-screen flex flex-col">
+        <!-- Navbar -->
+        <nav class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-lg border-b border-white/10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <a href="/" class="flex items-center gap-2">
+                        <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
+                        <span class="text-amber-500 font-extrabold text-xl tracking-tight">Eagles</span>
+                        <span class="text-white/70 font-light hidden sm:inline">Without Borders</span>
+                    </a>
+
+                    <div class="flex items-center gap-6">
+                        <a href="/" class="text-sm text-white/70 hover:text-white transition-colors inline-flex items-center gap-1">
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            Home
+                        </a>
+
+                        @auth
+                            <a href="{{ url('/dashboard') }}" class="text-sm text-white/70 hover:text-white transition-colors">
+                                Dashboard
+                            </a>
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <section class="flex-1 flex items-center justify-center py-16">
+            <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div class="renew-card text-center">
+                    <!-- Icon -->
+                    <div class="inline-flex items-center justify-center size-20 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
+                        <svg class="size-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-4xl font-black tracking-tight mb-4">
+                        {{ __('Membership') }}
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">{{ __('Renewal') }}</span>
+                    </h1>
+
+                    <p class="text-gray-400 text-base sm:text-lg leading-relaxed mb-2">
+                        {{ __('The profile you\'re looking for belongs to a member whose') }}
+                        <span class="text-amber-400 font-semibold">{{ __('membership is inactive') }}</span>.
+                    </p>
+
+                    <p class="text-gray-500 text-sm leading-relaxed mb-8">
+                        {{ __('Please contact your local club officers or the member directly for more information.') }}
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        <a
+                            href="/"
+                            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-sm transition-all hover:shadow-xl hover:shadow-amber-500/25"
+                        >
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            {{ __('Go Home') }}
+                        </a>
+
+                        @auth
+                            <a
+                                href="{{ url('/dashboard') }}"
+                                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold text-sm transition-all"
+                            >
+                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                </svg>
+                                {{ __('Dashboard') }}
+                            </a>
+                        @endauth
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="border-t border-white/10 py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-amber-500 font-extrabold">Eagles</span>
+                        <span class="text-white/50 font-light">Without Borders</span>
+                    </div>
+                    <p class="text-sm text-gray-500">
+                        &copy; {{ date('Y') }} Eagles Without Borders. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>
