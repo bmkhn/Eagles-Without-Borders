@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
                 {{ __('Members') }}
             </h2>
 
@@ -30,7 +30,7 @@
                         <!-- Search row -->
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
                             <div class="flex-1">
-                                <label for="q" class="block text-sm font-medium text-gray-700">
+                                <label for="q" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {{ __('Search by name, contact, or slug') }}
                                 </label>
                                 <input
@@ -38,7 +38,7 @@
                                     name="q"
                                     value="{{ $q }}"
                                     type="text"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('e.g. John Doe') }}"
                                 >
                             </div>
@@ -54,7 +54,7 @@
                                 @if($q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId)
                                     <a
                                         href="{{ route('admin.members.index') }}"
-                                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
+                                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
                                     >
                                         {{ __('Clear All') }}
                                     </a>
@@ -70,7 +70,7 @@
                                     <select
                                         id="region_id"
                                         name="region_id"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         onchange="this.form.submit()"
                                     >
                                         <option value="">{{ __('All Regions') }}</option>
@@ -83,20 +83,20 @@
                                 </div>
                             @else
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ __('Region') }}</label>
-                                    <p class="mt-1.5 text-sm text-gray-500">{{ $members->first()?->club?->region?->name ?? '—' }}</p>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Region') }}</label>
+                                    <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{{ $members->first()?->club?->region?->name ?? '—' }}</p>
                                 </div>
                             @endif
 
                             <div>
-                                <label for="club_id" class="block text-sm font-medium text-gray-700">{{ __('Club') }}</label>
+                                <label for="club_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Club') }}</label>
                                 @if($isClubPresident)
-                                    <p class="mt-1.5 text-sm text-gray-500">{{ $clubs->first()?->name ?? '—' }}</p>
+                                    <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{{ $clubs->first()?->name ?? '—' }}</p>
                                 @else
                                     <select
                                         id="club_id"
                                         name="club_id"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                         onchange="this.form.submit()"
                                     >
                                         <option value="">{{ __('All Clubs') }}</option>
@@ -110,11 +110,11 @@
                             </div>
 
                             <div>
-                                <label for="status" class="block text-sm font-medium text-gray-700">{{ __('Status') }}</label>
+                                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Status') }}</label>
                                 <select
                                     id="status"
                                     name="status"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                     onchange="this.form.submit()"
                                 >
                                     <option value="">{{ __('All Statuses') }}</option>
@@ -124,11 +124,11 @@
                             </div>
 
                             <div>
-                                <label for="position_id" class="block text-sm font-medium text-gray-700">{{ __('Position') }}</label>
+                                <label for="position_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Position') }}</label>
                                 <select
                                     id="position_id"
                                     name="position_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                     onchange="this.form.submit()"
                                 >
                                     <option value="">{{ __('All Positions') }}</option>
@@ -158,7 +158,7 @@
 
                         <x-table-row>
                             @foreach($members as $member)
-                                <tr class="bg-white border-b border-gray-200">
+                                <tr class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                                     <td class="px-3 py-3.5 text-sm text-gray-900 dark:text-gray-100">
                                         @if($member->profile_picture_url)
                                             <img

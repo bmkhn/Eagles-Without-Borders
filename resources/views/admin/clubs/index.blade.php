@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
                 {{ __('Clubs') }}
             </h2>
 
@@ -29,7 +29,7 @@
                     <div class="mb-4">
                         <form method="GET" action="{{ route('admin.clubs.index') }}" class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                             <div class="flex-1">
-                                <label for="q" class="block text-sm font-medium text-gray-700">
+                                <label for="q" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {{ __('Search by name') }}
                                 </label>
                                 <input
@@ -37,7 +37,7 @@
                                     name="q"
                                     value="{{ $q }}"
                                     type="text"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('e.g. Falcons') }}"
                                 >
                             </div>
@@ -50,13 +50,12 @@
                                     {{ __('Search') }}
                                 </button>
 
-                                @if($q !== '')
-                                    <a
-                                        href="{{ route('admin.clubs.index') }}"
-                                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 active:bg-gray-100"
-                                    >
-                                        {{ __('Clear') }}
-                                    </a>
+                                @if($q !== '')                                        <a
+                                            href="{{ route('admin.clubs.index') }}"
+                                            class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
+                                        >
+                                            {{ __('Clear') }}
+                                        </a>
                                 @endif
                             </div>
                         </form>
@@ -72,61 +71,59 @@
                             </tr>
                         </x-table-head>
 
-                        <x-table-row>
-                            @foreach($clubs as $club)
-                                <tr class="bg-white border-b border-gray-200">
-                                    <td class="px-3 py-3.5 text-sm text-gray-900">
-                                        {{ $club->name }}
-                                    </td>
+                        @foreach($clubs as $club)
+                            <tr class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                                <td class="px-3 py-3.5 text-sm text-gray-900 dark:text-gray-100">
+                                    {{ $club->name }}
+                                </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-700">
-                                        {{ $club->region?->name }}
-                                    </td>
+                                <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
+                                    {{ $club->region?->name }}
+                                </td>
 
-                                    <td class="px-3 py-3.5 text-sm text-gray-700">
+                                <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
+                                    @if($club->members_count > 0)
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                                            {{ $club->members_count }} {{ Str::plural('member', $club->members_count) }}
+                                        </span>
+                                    @else
+                                        <span class="text-gray-400 dark:text-gray-500">—</span>
+                                    @endif
+                                </td>
+
+                                <td class="px-3 py-3.5 text-sm text-right">
+                                    <div class="inline-flex gap-2">
+                                        <a
+                                            href="{{ route('admin.clubs.edit', $club) }}"
+                                            class="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                                        >
+                                            {{ __('Edit') }}
+                                        </a>
+
                                         @if($club->members_count > 0)
-                                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                                                {{ $club->members_count }} {{ Str::plural('member', $club->members_count) }}
+                                            <span
+                                                class="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-600 rounded-md text-xs font-semibold cursor-not-allowed"
+                                                title="{{ __('Cannot delete: :count :member(s) belong to this club.', ['count' => $club->members_count, 'member' => Str::plural('member', $club->members_count)]) }}"
+                                            >
+                                                {{ __('Delete') }}
                                             </span>
                                         @else
-                                            <span class="text-gray-400">—</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="px-3 py-3.5 text-sm text-right">
-                                        <div class="inline-flex gap-2">
-                                            <a
-                                                href="{{ route('admin.clubs.edit', $club) }}"
-                                                class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-semibold hover:bg-indigo-100"
-                                            >
-                                                {{ __('Edit') }}
-                                            </a>
-
-                                            @if($club->members_count > 0)
-                                                <span
-                                                    class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-400 border border-gray-200 rounded-md text-xs font-semibold cursor-not-allowed"
-                                                    title="{{ __('Cannot delete: :count :member(s) belong to this club.', ['count' => $club->members_count, 'member' => Str::plural('member', $club->members_count)]) }}"
+                                            <form method="POST" action="{{ route('admin.clubs.destroy', $club) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/50"
+                                                    onclick="return confirm('{{ __('Are you sure you want to delete this club?') }}')"
                                                 >
                                                     {{ __('Delete') }}
-                                                </span>
-                                            @else
-                                                <form method="POST" action="{{ route('admin.clubs.destroy', $club) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button
-                                                        type="submit"
-                                                        class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-md text-xs font-semibold hover:bg-red-100"
-                                                        onclick="return confirm('{{ __('Are you sure you want to delete this club?') }}')"
-                                                    >
-                                                        {{ __('Delete') }}
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </x-table-row>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
                     </x-table>
 
                     <div class="mt-6">

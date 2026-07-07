@@ -19,7 +19,7 @@
 
         <!-- Nav -->
         <nav class="px-2 pt-3 overflow-y-auto">
-            <ul class="space-y-1">
+            <ul class="space-y-1 pb-3">
                 <!-- Dashboard -->
                 <li>
                     <a
@@ -129,7 +129,7 @@
                 </button>
 
                 <!-- User info and Sign Out -->
-                <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
                     <div x-show="!sidebarCollapsed" class="mb-2 text-xs text-gray-500 dark:text-gray-400 truncate px-1">
                         <span class="font-medium text-gray-700 dark:text-gray-300">{{ $user->name }}</span>
                     </div>
