@@ -7,7 +7,6 @@ use App\Http\Requests\Admin\MemberStoreRequest;
 use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\Models\Club;
 use App\Models\Member;
-use App\Models\Region;
 use App\Models\Position;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -45,66 +44,6 @@ class MemberController extends Controller
 
         return view('admin.members.index', [
             'members' => $members,
-            'q' => $q,
-        ]);
-    }
-
-    public function directory(): View
-    {
-        $user = request()->user();
-        $q = request()->string('q')->trim()->toString();
-
-        // Club presidents are scoped to their own club
-        if ($user->hasRole('club-president') && $user->club_id) {
-            $club = \App\Models\Club::with(['region', 'members' => function ($query) use ($q) {
-                $query->with('position')->orderBy('last_name')->orderBy('first_name');
-
-                if ($q !== '') {
-                    $query->where(function ($memberQuery) use ($q) {
-                        $memberQuery->where('first_name', 'like', '%' . $q . '%')
-                            ->orWhere('last_name', 'like', '%' . $q . '%')
-                            ->orWhere('contact_number', 'like', '%' . $q . '%');
-                    });
-                }
-            }])->findOrFail($user->club_id);
-
-            $region = $club->region;
-            $region->setRelation('clubs', collect([$club]));
-
-            return view('admin.members.directory', [
-                'regions' => collect([$region]),
-                'q' => $q,
-            ]);
-        }
-
-        $regions = Region::query()
-            ->with(['clubs' => function ($query) use ($q) {
-                $query->with(['members' => function ($memberQuery) use ($q) {
-                    $memberQuery->with('position')->orderBy('last_name')->orderBy('first_name');
-                }])->orderBy('name');
-
-                if ($q !== '') {
-                    $query->whereHas('members', function ($memberQuery) use ($q) {
-                        $memberQuery->where('first_name', 'like', '%' . $q . '%')
-                            ->orWhere('last_name', 'like', '%' . $q . '%')
-                            ->orWhere('contact_number', 'like', '%' . $q . '%');
-                    });
-                }
-            }])
-            ->orderBy('name')
-            ->get();
-
-        if ($q !== '') {
-            $regions = $regions->filter(function ($region) {
-                $region->clubs = $region->clubs->filter(function ($club) {
-                    return $club->members->count() > 0;
-                });
-                return $region->clubs->count() > 0;
-            })->values();
-        }
-
-        return view('admin.members.directory', [
-            'regions' => $regions,
             'q' => $q,
         ]);
     }

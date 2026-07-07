@@ -49,10 +49,6 @@
                     </a>
 
                     <div class="flex items-center gap-6">
-                        <a href="{{ route('member.directory') }}" class="text-sm text-white/70 hover:text-white transition-colors">
-                            Member Directory
-                        </a>
-
                         @auth
                             <a href="{{ url('/dashboard') }}" class="text-sm text-white/70 hover:text-white transition-colors">
                                 Dashboard

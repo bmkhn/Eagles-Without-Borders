@@ -7,42 +7,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/member-directory', function () {
-    $q = request()->string('q')->trim()->toString();
-
-    $regions = \App\Models\Region::query()
-        ->with(['clubs' => function ($query) use ($q) {
-            $query->with(['members' => function ($memberQuery) use ($q) {
-                $memberQuery->with('position')->orderBy('last_name')->orderBy('first_name');
-            }])->orderBy('name');
-
-            if ($q !== '') {
-                $query->whereHas('members', function ($memberQuery) use ($q) {
-                    $memberQuery->where('first_name', 'like', '%' . $q . '%')
-                        ->orWhere('last_name', 'like', '%' . $q . '%')
-                        ->orWhere('contact_number', 'like', '%' . $q . '%');
-                });
-            }
-        }])
-        ->orderBy('name')
-        ->get();
-
-    // Filter out clubs with no members (when searching)
-    if ($q !== '') {
-        $regions = $regions->filter(function ($region) {
-            $region->clubs = $region->clubs->filter(function ($club) {
-                return $club->members->count() > 0;
-            });
-            return $region->clubs->count() > 0;
-        })->values();
-    }
-
-    return view('public.member-directory', [
-        'regions' => $regions,
-        'q' => $q,
-    ]);
-})->name('member.directory');
-
 Route::get('/member-profile/{slug}', function (string $slug) {
     return view('public.member-profile', ['slug' => $slug]);
 })->name('member.profile');
@@ -112,10 +76,6 @@ Route::middleware(['auth', 'club.scope'])->prefix('admin')->group(function () {
             'update' => 'admin.positions.update',
             'destroy' => 'admin.positions.destroy',
         ]);
-
-    Route::get('/member-directory', [\App\Http\Controllers\Admin\MemberController::class, 'directory'])
-        ->middleware('role:national-president|club-president')
-        ->name('admin.members.directory');
 
     Route::resource('members', \App\Http\Controllers\Admin\MemberController::class)
         ->middleware('role:national-president|club-president')
