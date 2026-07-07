@@ -8,22 +8,6 @@
       "args": ["artisan", "serve"],
       "isBackground": true,
       "problemMatcher": []
-    },
-    {
-      "label": "Vite: Dev",
-      "type": "npm",
-      "script": "dev",
-      "isBackground": true,
-      "problemMatcher": []
-    },
-    {
-      "label": "Run Laravel + Vite",
-      "dependsOn": [
-        "Laravel: Serve",
-        "Vite: Dev"
-      ],
-      "dependsOrder": "parallel",
-      "problemMatcher": []
     }
   ]
 }
