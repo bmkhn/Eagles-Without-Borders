@@ -138,22 +138,34 @@
                                                 <svg class="size-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                                                 </svg>
-                                                {{ __('Certificates') }}
+                                                {{ __('Certificates & Awards') }}
                                             </h2>
                                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 @foreach($member->certificates as $certificate)
-                                                    <div class="bg-white/5 rounded-lg px-4 py-3 border border-white/5 flex items-center gap-3">
-                                                        <div class="size-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                                                    <div class="bg-white/5 rounded-lg px-4 py-3 border border-white/5 flex items-center gap-3 group hover:bg-white/[0.07] transition-colors">
+                                                        <div class="size-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
                                                             <svg class="size-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                             </svg>
                                                         </div>
-                                                        <div>
-                                                            <p class="text-sm text-white font-medium">{{ $certificate->name ?? ($certificate->title ?? ('Certificate #' . $certificate->id)) }}</p>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="text-sm text-white font-medium truncate">{{ $certificate->name }}</p>
                                                             @if($certificate->issued_at)
                                                                 <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($certificate->issued_at)->format('M d, Y') }}</p>
                                                             @endif
                                                         </div>
+                                                        @if($certificate->file_url)
+                                                            <a
+                                                                href="{{ $certificate->file_url }}"
+                                                                download
+                                                                class="shrink-0 size-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 transition-all"
+                                                                title="{{ __('Download') }}"
+                                                            >
+                                                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                                </svg>
+                                                            </a>
+                                                        @endif
                                                     </div>
                                                 @endforeach
                                             </div>

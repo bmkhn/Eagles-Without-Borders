@@ -74,9 +74,44 @@
                         <span class="text-amber-400 font-semibold">{{ __('membership is inactive') }}</span>.
                     </p>
 
-                    <p class="text-gray-500 text-sm leading-relaxed mb-8">
+                    <p class="text-gray-500 text-sm leading-relaxed mb-6">
                         {{ __('Please contact your local club officers or the member directly for more information.') }}
                     </p>
+
+                    {{-- Certificates --}}
+                    @if($member->certificates && $member->certificates->count() > 0)
+                        <div class="mb-8 text-left border border-white/10 rounded-xl p-4 bg-white/[0.03]">
+                            <h3 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                                <svg class="size-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                                {{ __('Certificates & Awards') }}
+                                <span class="text-xs text-gray-500 font-normal">({{ $member->certificates->count() }})</span>
+                            </h3>
+                            <div class="space-y-1.5">
+                                @foreach($member->certificates as $certificate)
+                                    <div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/[0.05] transition-colors">
+                                        <svg class="size-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="text-sm text-gray-400 truncate flex-1">{{ $certificate->name }}</span>
+                                        @if($certificate->file_url)
+                                            <a
+                                                href="{{ $certificate->file_url }}"
+                                                download
+                                                class="shrink-0 text-gray-500 hover:text-amber-400 transition-colors"
+                                                title="{{ __('Download') }}"
+                                            >
+                                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                         <a

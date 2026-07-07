@@ -18,9 +18,18 @@ class CertificateSeeder extends Seeder
         }
 
         $certificateTemplates = [
-            ['name' => 'Leadership Excellence Award', 'offset' => 0],
-            ['name' => 'Community Service Recognition', 'offset' => 1],
-            ['name' => 'Fraternal Service Award', 'offset' => 2],
+            [
+                'name' => 'Leadership Excellence Award',
+                'generateFile' => true,
+            ],
+            [
+                'name' => 'Community Service Recognition',
+                'generateFile' => false,
+            ],
+            [
+                'name' => 'Fraternal Service Award',
+                'generateFile' => true,
+            ],
         ];
 
         $created = 0;
@@ -31,7 +40,6 @@ class CertificateSeeder extends Seeder
             for ($i = 0; $i < $count && $i < count($certificateTemplates); $i++) {
                 $template = $certificateTemplates[$i];
 
-                // Avoid duplicates on re-seed
                 $existing = Certificate::where('member_id', $member->id)
                     ->where('name', $template['name'])
                     ->exists();
@@ -40,11 +48,18 @@ class CertificateSeeder extends Seeder
                     continue;
                 }
 
-                Certificate::create([
+                $data = [
                     'member_id' => $member->id,
                     'name' => $template['name'],
                     'issued_at' => now()->subMonths(rand(1, 12))->subDays(rand(0, 28)),
-                ]);
+                ];
+
+                // Some certificates get a simulated file path
+                if ($template['generateFile']) {
+                    $data['file'] = 'certificates/' . uniqid('seed_') . '.webp';
+                }
+
+                Certificate::create($data);
 
                 $created++;
             }

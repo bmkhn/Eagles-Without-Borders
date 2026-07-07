@@ -15,7 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <script>
-            // Prevent flash of light mode before Alpine initializes
+            // Prevent flash before Alpine initializes
             if (localStorage.getItem('darkMode') === 'true') {
                 document.documentElement.classList.add('dark');
             }
@@ -26,13 +26,16 @@
         class="font-sans antialiased bg-gray-100 dark:bg-gray-950 dark:text-gray-200"
         x-data="{
             sidebarOpen: false,
-            sidebarCollapsed: false,
+            sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
             darkMode: localStorage.getItem('darkMode') === 'true'
         }"
         x-init="
             $watch('darkMode', val => {
                 localStorage.setItem('darkMode', val);
                 document.documentElement.classList.toggle('dark', val);
+            });
+            $watch('sidebarCollapsed', val => {
+                localStorage.setItem('sidebarCollapsed', val);
             });
             if (darkMode) document.documentElement.classList.add('dark');
             window.addEventListener('toggle-sidebar', () => {

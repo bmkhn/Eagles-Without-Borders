@@ -37,6 +37,21 @@ class MemberUpdateRequest extends FormRequest
             'contact_number' => ['required', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'remove_photo' => ['nullable', 'boolean'],
+
+            // Certificates
+            'certificates' => ['nullable', 'array'],
+            'certificates.*.name' => ['required_with:certificates.*.file', 'string', 'max:255'],
+            'certificates.*.file' => ['nullable', 'file', 'mimes:pdf,jpeg,png,jpg,gif,webp', 'max:5120'],
+            'certificates.*.issued_at' => ['nullable', 'date'],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'certificates.*.name' => 'certificate name',
+            'certificates.*.file' => 'certificate file',
+            'certificates.*.issued_at' => 'certificate issue date',
         ];
     }
 }

@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\MemberStoreRequest;
 use App\Http\Requests\Admin\MemberUpdateRequest;
+use App\Models\Certificate;
 use App\Models\Club;
 use App\Models\Member;
 use App\Models\Position;
 use App\Models\Region;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Intervention\Image\Encoders\WebpEncoder;
@@ -34,35 +36,28 @@ class MemberController extends Controller
         $membersQuery = Member::query()
             ->with(['club.region', 'position']);
 
-        // Club presidents are scoped to their own club
         if ($isClubPresident) {
             $membersQuery->where('club_id', $user->club_id);
         }
 
-        // Region filter (NP only, since CPs are scoped)
         if ($filterRegionId && $isNationalPresident) {
             $membersQuery->whereHas('club', function ($q) use ($filterRegionId) {
                 $q->where('region_id', $filterRegionId);
             });
         }
 
-        // Club filter
         if ($filterClubId) {
-            // CPs can only filter their own club, so this is safe
             $membersQuery->where('club_id', $filterClubId);
         }
 
-        // Status filter
         if ($filterStatus !== '' && in_array($filterStatus, ['active', 'inactive'])) {
             $membersQuery->where('status', $filterStatus);
         }
 
-        // Position filter
         if ($filterPositionId) {
             $membersQuery->where('position_id', $filterPositionId);
         }
 
-        // Search query
         if ($q !== '') {
             $membersQuery->where(function ($query) use ($q) {
                 $query->where('first_name', 'like', '%' . $q . '%')
@@ -75,7 +70,6 @@ class MemberController extends Controller
         $members = $membersQuery->orderBy('last_name')->orderBy('first_name')
             ->paginate(10)->withQueryString();
 
-        // Build filter data
         $regions = $isNationalPresident ? Region::query()->orderBy('name')->get() : collect();
         $clubs = Club::query()->orderBy('name');
         if ($filterRegionId && $isNationalPresident) {
@@ -107,7 +101,6 @@ class MemberController extends Controller
     {
         $user = request()->user();
 
-        // Club presidents can only create members for their own club
         if ($user->hasRole('club-president') && $user->club_id) {
             $clubs = Club::query()->where('id', $user->club_id)->get();
         } else {
@@ -124,9 +117,8 @@ class MemberController extends Controller
     {
         $user = request()->user();
 
-        $data = $request->safe()->except(['profile_picture']);
+        $data = $request->safe()->except(['profile_picture', 'certificates']);
 
-        // Club presidents can only create members for their own club
         if ($user->hasRole('club-president') && $user->club_id) {
             $data['club_id'] = $user->club_id;
         }
@@ -136,10 +128,14 @@ class MemberController extends Controller
         $member->status = $member->status ?? 'active';
 
         if ($request->hasFile('profile_picture')) {
-            $member->profile_picture = $this->uploadProfilePicture($request->file('profile_picture'));
+            $member->profile_picture = $this->storeProfilePicture($request->file('profile_picture'));
         }
 
         $member->save();
+
+        if ($request->has('certificates')) {
+            $this->syncCertificates($member, $request);
+        }
 
         return redirect()
             ->route('admin.members.index')
@@ -150,7 +146,6 @@ class MemberController extends Controller
     {
         $user = request()->user();
 
-        // Club presidents can only edit members for their own club
         if ($user->hasRole('club-president') && $user->club_id) {
             $clubs = Club::query()->where('id', $user->club_id)->get();
         } else {
@@ -158,7 +153,7 @@ class MemberController extends Controller
         }
 
         return view('admin.members.edit', [
-            'member' => $member->load(['club', 'position']),
+            'member' => $member->load(['club', 'position', 'certificates']),
             'clubs' => $clubs,
             'positions' => Position::query()->orderBy('name')->get(),
         ]);
@@ -168,9 +163,8 @@ class MemberController extends Controller
     {
         $user = request()->user();
 
-        $data = $request->safe()->except(['profile_picture', 'remove_photo']);
+        $data = $request->safe()->except(['profile_picture', 'remove_photo', 'certificates']);
 
-        // Club presidents can only update members for their own club
         if ($user->hasRole('club-president') && $user->club_id) {
             $data['club_id'] = $user->club_id;
         }
@@ -179,19 +173,20 @@ class MemberController extends Controller
         $member->applySlugFromName();
 
         if ($request->hasFile('profile_picture')) {
-            // Delete old picture
             if ($member->profile_picture) {
                 Storage::disk('public')->delete($member->profile_picture);
             }
-
-            $member->profile_picture = $this->uploadProfilePicture($request->file('profile_picture'));
+            $member->profile_picture = $this->storeProfilePicture($request->file('profile_picture'));
         } elseif ($request->boolean('remove_photo') && $member->profile_picture) {
-            // Remove photo checkbox checked
             Storage::disk('public')->delete($member->profile_picture);
             $member->profile_picture = null;
         }
 
         $member->save();
+
+        if ($request->has('certificates') || $request->boolean('certificates_managed')) {
+            $this->syncCertificates($member, $request);
+        }
 
         return redirect()
             ->route('admin.members.index')
@@ -200,9 +195,14 @@ class MemberController extends Controller
 
     public function destroy(Member $member): RedirectResponse
     {
-        // Delete profile picture
         if ($member->profile_picture) {
             Storage::disk('public')->delete($member->profile_picture);
+        }
+
+        foreach ($member->certificates as $cert) {
+            if ($cert->file) {
+                Storage::disk('public')->delete($cert->file);
+            }
         }
 
         $member->delete();
@@ -212,23 +212,105 @@ class MemberController extends Controller
             ->with('success', 'Member deleted successfully.');
     }
 
-    private function uploadProfilePicture($file): string
+    /**
+     * Store a profile picture with aggressive optimization: 300×300, WebP at 60% quality.
+     */
+    private function storeProfilePicture(UploadedFile $file): string
+    {
+        return $this->optimizeAndStoreImage($file, 'profile-pictures', 300, 300, 60);
+    }
+
+    /**
+     * Store and optimize an uploaded file.
+     *
+     * - Images: resized to fit within max dimensions, converted to WebP at given quality
+     * - PDFs: stored as-is (no server-side compression available)
+     */
+    private function optimizeAndStoreImage(UploadedFile $file, string $directory, int $maxWidth = 1200, int $maxHeight = 1200, int $quality = 70): string
     {
         $manager = new ImageManager(new Driver());
         $image = $manager->decode($file);
 
-        // Resize to 300x300 while maintaining aspect ratio and cropping
-        $image->cover(300, 300);
+        // Resize to fit within max dimensions while maintaining aspect ratio
+        $image->scale(width: $maxWidth, height: $maxHeight);
 
-        $filename = uniqid('profile_') . '.webp';
-        $path = 'profile-pictures/' . $filename;
+        $filename = uniqid('img_') . '.webp';
+        $path = $directory . '/' . $filename;
 
-        // Encode as webp at 80% quality and store
-        $encoded = $image->encode(new WebpEncoder(quality: 80));
+        $encoded = $image->encode(new WebpEncoder(quality: $quality));
         Storage::disk('public')->put($path, $encoded);
 
         return $path;
     }
 
+    /**
+     * Store a certificate file with optimization.
+     *
+     * Images are resized/converted to WebP. PDFs are stored as-is.
+     */
+    private function storeCertificateFile(UploadedFile $file): string
+    {
+        $mime = $file->getMimeType();
 
+        // Images: optimize by resizing and converting to WebP
+        if (str_starts_with($mime, 'image/')) {
+            return $this->optimizeAndStoreImage($file, 'certificates', 1200, 1200, 70);
+        }
+
+        // PDFs and other files: store as-is
+        $extension = $file->getClientOriginalExtension() ?: 'pdf';
+        $filename = uniqid('cert_') . '.' . $extension;
+
+        return $file->storeAs('certificates', $filename, 'public');
+    }
+
+    private function syncCertificates(Member $member, MemberStoreRequest|MemberUpdateRequest $request): void
+    {
+        $certificates = $request->input('certificates', []);
+        $existingIds = [];
+        $memberCertIds = $member->certificates()->pluck('id')->all();
+
+        foreach ($certificates as $index => $certData) {
+            $certId = $certData['id'] ?? null;
+
+            if (empty($certData['name']) && !$request->hasFile("certificates.{$index}.file")) {
+                continue;
+            }
+
+            $data = [
+                'name' => $certData['name'] ?? '',
+                'issued_at' => $certData['issued_at'] ?? null,
+            ];
+
+            if ($certId && in_array($certId, $memberCertIds)) {
+                $cert = Certificate::find($certId);
+                if ($cert) {
+                    if ($request->hasFile("certificates.{$index}.file")) {
+                        if ($cert->file) {
+                            Storage::disk('public')->delete($cert->file);
+                        }
+                        $data['file'] = $this->storeCertificateFile($request->file("certificates.{$index}.file"));
+                    }
+                    $cert->update($data);
+                    $existingIds[] = $cert->id;
+                }
+            } else {
+                $data['member_id'] = $member->id;
+                if ($request->hasFile("certificates.{$index}.file")) {
+                    $data['file'] = $this->storeCertificateFile($request->file("certificates.{$index}.file"));
+                }
+                $cert = Certificate::create($data);
+                $existingIds[] = $cert->id;
+            }
+        }
+
+        $member->certificates()
+            ->whereNotIn('id', $existingIds)
+            ->each(function ($cert) {
+                if ($cert->file) {
+                    Storage::disk('public')->delete($cert->file);
+                }
+                $cert->delete();
+            });
+    }
 }

@@ -13,11 +13,23 @@ class Certificate extends Model
     protected $fillable = [
         'member_id',
         'name',
+        'file',
         'issued_at',
     ];
+
+    protected $appends = ['file_url'];
 
     public function member(): BelongsTo
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (!$this->file) {
+            return null;
+        }
+
+        return asset('storage/' . $this->file);
     }
 }

@@ -191,6 +191,96 @@
                             @enderror
                         </div>
 
+                        {{-- Certificates Section --}}
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6"
+                             x-data="{
+                                certificates: [],
+                                addCertificate() {
+                                    this.certificates.push({ name: '', file: null, issued_at: '' });
+                                },
+                                removeCertificate(index) {
+                                    this.certificates.splice(index, 1);
+                                }
+                             }">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ __('Certificates') }}</h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Add certificates, awards, and recognitions.') }}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="addCertificate()"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition"
+                                >
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    {{ __('Add Certificate') }}
+                                </button>
+                            </div>
+
+                            <template x-for="(cert, index) in certificates" :key="index">
+                                <div class="p-4 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="'Certificate #' + (index + 1)"></span>
+                                        <button
+                                            type="button"
+                                            @click="removeCertificate(index)"
+                                            class="text-red-500 hover:text-red-700 transition"
+                                        >
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <x-input-label x-bind:for="'certificates_' + index + '_name'" :value="__('Certificate Name')" />
+                                            <input
+                                                :id="'certificates_' + index + '_name'"
+                                                :name="'certificates[' + index + '][name]'"
+                                                type="text"
+                                                x-model="cert.name"
+                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                                placeholder="{{ __('e.g. Leadership Award') }}"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <x-input-label x-bind:for="'certificates_' + index + '_issued_at'" :value="__('Date Issued')" />
+                                            <input
+                                                :id="'certificates_' + index + '_issued_at'"
+                                                :name="'certificates[' + index + '][issued_at]'"
+                                                type="date"
+                                                x-model="cert.issued_at"
+                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                            />
+                                        </div>
+
+                                        <div class="sm:col-span-2">
+                                            <x-input-label x-bind:for="'certificates_' + index + '_file'" :value="__('Certificate File')" />
+                                            <input
+                                                :id="'certificates_' + index + '_file'"
+                                                :name="'certificates[' + index + '][file]'"
+                                                type="file"
+                                                accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                                class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                            />
+                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
+                                            @error('certificates.*.file')
+                                                <x-input-error class="mt-1" :messages="[$message]" />
+                                            @enderror
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <p x-show="certificates.length === 0" class="text-sm text-gray-400 dark:text-gray-500 text-center py-4 italic">
+                                {{ __('No certificates added yet. Click "Add Certificate" above.') }}
+                            </p>
+                        </div>
+
                         <script>
                             function updateStatusLabel(checkbox) {
                                 const container = checkbox.closest('label');
@@ -202,7 +292,6 @@
                                         inactiveLabel.classList.toggle('hidden', checkbox.checked);
                                     }
                                 }
-                                // Update the hidden input before this checkbox
                                 const hiddenInput = checkbox.previousElementSibling;
                                 if (hiddenInput && hiddenInput.type === 'hidden') {
                                     hiddenInput.value = checkbox.checked ? 'active' : 'inactive';
