@@ -2,14 +2,12 @@
     $user = auth()->user();
     $isNp = $user?->hasRole('national-president');
     $isAdmin = $user?->hasAnyRole(['national-president', 'club-president']);
-@endphp
-
-<aside
-    x-data
-    x-cloak
-    :class="sidebarCollapsed ? 'hidden lg:block lg:w-16 lg:flex-shrink-0' : 'lg:block lg:w-64 lg:flex-shrink-0'"
-    class="hidden lg:block lg:flex-shrink-0 transition-all duration-200"
->
+@endphp    <aside
+        x-data
+        x-cloak
+        :class="sidebarCollapsed ? 'hidden lg:block lg:w-16 lg:flex-shrink-0' : 'lg:block lg:w-64 lg:flex-shrink-0'"
+        class="flex h-full w-full flex-col transition-all duration-200"
+    >
     <div class="flex h-full flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <!-- Branding -->
         <div class="flex items-center gap-2 px-4 py-4 border-b border-gray-200 dark:border-gray-700">

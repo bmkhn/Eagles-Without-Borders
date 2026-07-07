@@ -27,19 +27,26 @@
                     <div class="space-y-2">
                         <div>
                             <x-input-label for="club_id" :value="__('Club')" />
-                            <select
-                                id="club_id"
-                                name="club_id"
-                                required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            >
-                                <option value="">{{ __('Select club') }}</option>
-                                @foreach($clubs as $club)
-                                    <option value="{{ $club->id }}" @selected(old('club_id', $member->club_id) == $club->id)>
-                                        {{ $club->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if($clubs->count() === 1)
+                                <p class="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                    {{ $clubs->first()->name }}
+                                </p>
+                                <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}">
+                            @else
+                                <select
+                                    id="club_id"
+                                    name="club_id"
+                                    required
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                >
+                                    <option value="">{{ __('Select club') }}</option>
+                                    @foreach($clubs as $club)
+                                        <option value="{{ $club->id }}" @selected(old('club_id', $member->club_id) == $club->id)>
+                                            {{ $club->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                             @error('club_id')
                                 <x-input-error class="mt-1" :messages="[$message]" />
                             @enderror

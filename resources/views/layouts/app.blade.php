@@ -48,7 +48,9 @@
         <div class="min-h-screen">
             <div class="flex min-h-screen">
                 <!-- Sidebar (Desktop) -->
-                @include('layouts.sidebar')
+                <div class="hidden lg:block lg:flex-shrink-0">
+                    @include('layouts.sidebar')
+                </div>
 
                 <!-- Mobile sidebar overlay -->
                 <div
@@ -59,7 +61,7 @@
                 >
                     <div class="absolute inset-0 bg-black/30" @click="sidebarOpen = false"></div>
 
-                    <div class="relative h-full w-72 bg-white dark:bg-gray-900 shadow-xl">
+                    <div class="relative h-full w-72 max-w-[85vw] bg-white dark:bg-gray-900 shadow-xl overflow-y-auto">
                         @include('layouts.sidebar')
                     </div>
                 </div>
