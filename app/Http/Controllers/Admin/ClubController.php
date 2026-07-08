@@ -82,6 +82,12 @@ class ClubController extends Controller
         activity()
             ->performedOn($club)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+                'region_id' => $club->region_id,
+                'club_admin_email' => $cpUser->email,
+            ])
             ->log('created');
 
         return redirect()
@@ -148,6 +154,11 @@ class ClubController extends Controller
         activity()
             ->performedOn($club)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+                'region_id' => $club->region_id,
+            ])
             ->log('updated');
 
         return redirect()
@@ -172,6 +183,10 @@ class ClubController extends Controller
         activity()
             ->performedOn($club)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'club_id' => $club->id,
+                'club_name' => $club->name,
+            ])
             ->log('deleted');
 
         $club->delete();

@@ -54,7 +54,7 @@
                         <div class="ml-auto flex items-center gap-2">
                             <!-- Export Button -->
                             <a
-                                href="{{ route('admin.members.export') }}"
+                                href="{{ route('admin.members.export', request()->query()) }}"
                                 class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                             >
                                 <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,8 +212,9 @@
                             {{ __('Import Members from CSV') }}
                         </h4>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                            {{ __('CSV must include columns: First Name, M.I., Last Name, Suffix, Contact Number, Position, Status.') }}
+                            {{ __('CSV must include columns: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.') }}
                             {{ __('Duplicates (same name + contact number) will be skipped.') }}
+                            {{ __('National-level admins: Club/Region columns are used to resolve the club. Scoped admins: Club is validated against your scope.') }}
                         </p>
 
                         <form method="POST" action="{{ route('admin.members.import') }}" enctype="multipart/form-data">

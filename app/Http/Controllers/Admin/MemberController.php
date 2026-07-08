@@ -188,9 +188,21 @@ class MemberController extends Controller
             $this->syncCertificates($member, $request);
         }
 
+        $member->load('club.region');
+
         activity()
             ->performedOn($member)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'club' => $member->club?->name,
+                'region' => $member->club?->region?->name,
+                'position' => $member->position?->name,
+                'status' => $member->status,
+                'contact_number' => $member->contact_number,
+                'source' => 'manual_create',
+            ])
             ->log('created');
 
         return redirect()
@@ -256,9 +268,20 @@ class MemberController extends Controller
             $this->syncCertificates($member, $request);
         }
 
+        $member->load('club.region');
+
         activity()
             ->performedOn($member)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'club' => $member->club?->name,
+                'region' => $member->club?->region?->name,
+                'position' => $member->position?->name,
+                'status' => $member->status,
+                'contact_number' => $member->contact_number,
+            ])
             ->log('updated');
 
         return redirect()
@@ -267,28 +290,76 @@ class MemberController extends Controller
     }
 
     /**
-     * Export members to CSV.
+     * Export members to CSV with all current filters applied.
      */
     public function export(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $user = request()->user();
 
+        $q = request()->string('q')->trim()->toString();
+        $filterRegionId = request()->integer('region_id');
+        $filterClubId = request()->integer('club_id');
+        $filterStatus = request()->string('status')->trim()->toString();
+        $filterPositionId = request()->integer('position_id');
+
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
         $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
         $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
 
-        $membersQuery = Member::query()->with('position')->orderBy('last_name')->orderBy('first_name');
+        $membersQuery = Member::query()
+            ->with(['club.region', 'position'])
+            ->orderBy('last_name')->orderBy('first_name');
 
+        // Role scoping
         if ($isClubAdmin) {
             $membersQuery->where('club_id', $user->club_id);
         } elseif ($isRegionalAdmin) {
             $membersQuery->whereHas('club', fn ($q) => $q->where('region_id', $user->region_id));
         }
 
+        // Apply same filters as index
+        if ($filterRegionId && ($isSuperAdmin || $isNationalAdmin)) {
+            $membersQuery->whereHas('club', function ($q) use ($filterRegionId) {
+                $q->where('region_id', $filterRegionId);
+            });
+        }
+
+        if ($filterClubId) {
+            $membersQuery->where('club_id', $filterClubId);
+        }
+
+        if ($filterStatus !== '' && in_array($filterStatus, ['active', 'inactive'])) {
+            $membersQuery->where('status', $filterStatus);
+        }
+
+        if ($filterPositionId) {
+            $membersQuery->where('position_id', $filterPositionId);
+        }
+
+        if ($q !== '') {
+            $membersQuery->where(function ($query) use ($q) {
+                $query->where('first_name', 'like', '%' . $q . '%')
+                    ->orWhere('last_name', 'like', '%' . $q . '%')
+                    ->orWhere('contact_number', 'like', '%' . $q . '%')
+                    ->orWhere('slug', 'like', '%' . $q . '%');
+            });
+        }
+
         $members = $membersQuery->get();
 
         activity()
             ->causedBy(auth()->user())
-            ->withProperties(['count' => $members->count()])
+            ->withProperties([
+                'count' => $members->count(),
+                'filters' => array_filter([
+                    'q' => $q ?: null,
+                    'region_id' => $filterRegionId ?: null,
+                    'club_id' => $filterClubId ?: null,
+                    'status' => $filterStatus ?: null,
+                    'position_id' => $filterPositionId ?: null,
+                ]),
+            ])
             ->log('exported_members');
 
         $headers = [
@@ -298,9 +369,8 @@ class MemberController extends Controller
 
         $callback = function () use ($members) {
             $handle = fopen('php://output', 'w');
-            // BOM for Excel UTF-8 compatibility
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Position', 'Status']);
+            fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Club', 'Region', 'Position', 'Status']);
 
             foreach ($members as $member) {
                 fputcsv($handle, [
@@ -309,6 +379,8 @@ class MemberController extends Controller
                     $member->last_name,
                     $member->suffix,
                     $member->contact_number,
+                    $member->club?->name ?? '',
+                    $member->club?->region?->name ?? '',
                     $member->position?->name ?? '',
                     $member->status,
                 ]);
@@ -370,7 +442,7 @@ class MemberController extends Controller
         // Normalize headers
         $header = array_map(fn ($h) => trim(mb_strtolower(str_replace(['-', ' '], '_', $h))), $header);
 
-        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'contact_number', 'position', 'status'];
+        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'contact_number', 'club', 'region', 'position', 'status'];
         // Also accept 'middle_initial' instead of 'm.i.'
         $normalizedHeaders = array_map(function ($h) {
             return $h === 'middle_initial' ? 'm.i.' : $h;
@@ -382,7 +454,7 @@ class MemberController extends Controller
             return redirect()
                 ->route('admin.members.index')
                 ->with('error', 'CSV is missing required columns: ' . implode(', ', $missing) .
-                    '. Expected: First Name, M.I., Last Name, Suffix, Contact Number, Position, Status.');
+                    '. Expected: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.');
         }
 
         // Build column index map
@@ -414,6 +486,8 @@ class MemberController extends Controller
             $lastName = $row[$colMap['last_name']] ?? '';
             $suffix = $row[$colMap['suffix']] ?? '';
             $contactNumber = $row[$colMap['contact_number']] ?? '';
+            $clubName = $row[$colMap['club']] ?? '';
+            $regionName = $row[$colMap['region']] ?? '';
             $positionName = $row[$colMap['position']] ?? '';
             $status = $row[$colMap['status']] ?? 'active';
 
@@ -421,6 +495,41 @@ class MemberController extends Controller
             if (empty($firstName) || empty($lastName)) {
                 $errors[] = "Row {$rowNumber}: First Name and Last Name are required.";
                 continue;
+            }
+
+            // ── Club & Region validation per row ────────────────
+            $rowClubId = $clubId; // default to the selected club_id
+            if ($isSuperAdmin || $isNationalAdmin) {
+                // For national-level admins, resolve club by name from CSV
+                if (!empty($clubName)) {
+                    $resolvedClub = Club::where('name', $clubName)->first();
+                    if (!$resolvedClub) {
+                        $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found.";
+                        continue;
+                    }
+                    // Verify region matches if provided
+                    if (!empty($regionName)) {
+                        $resolvedRegion = Region::where('name', $regionName)->first();
+                        if (!$resolvedRegion) {
+                            $errors[] = "Row {$rowNumber}: Region '{$regionName}' not found.";
+                            continue;
+                        }
+                        if ((int) $resolvedClub->region_id !== (int) $resolvedRegion->id) {
+                            $errors[] = "Row {$rowNumber}: Club '{$clubName}' is not in Region '{$regionName}'.";
+                            continue;
+                        }
+                    }
+                    $rowClubId = $resolvedClub->id;
+                }
+            } elseif ($isRegionalAdmin && !empty($clubName)) {
+                $resolvedClub = Club::where('name', $clubName)
+                    ->where('region_id', $user->region_id)
+                    ->first();
+                if (!$resolvedClub) {
+                    $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found in your region.";
+                    continue;
+                }
+                $rowClubId = $resolvedClub->id;
             }
 
             // Normalize status
@@ -443,7 +552,7 @@ class MemberController extends Controller
 
             // Check for exact duplicate (same first_name + last_name + contact_number in the same club)
             $duplicate = Member::query()
-                ->where('club_id', $clubId)
+                ->where('club_id', $rowClubId)
                 ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
                 ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
                 ->where('contact_number', $contactNumber)
@@ -456,7 +565,7 @@ class MemberController extends Controller
 
             // Create member
             $member = new Member([
-                'club_id' => $clubId,
+                'club_id' => $rowClubId,
                 'position_id' => $position->id,
                 'first_name' => $firstName,
                 'middle_initial' => $middleInitial ?: null,
@@ -523,6 +632,11 @@ class MemberController extends Controller
         activity()
             ->performedOn($member)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'slug' => $member->slug,
+            ])
             ->log('deleted');
 
         $member->delete();

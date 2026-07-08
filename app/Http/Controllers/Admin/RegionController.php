@@ -56,6 +56,11 @@ class RegionController extends Controller
         activity()
             ->performedOn($region)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'region_id' => $region->id,
+                'region_name' => $region->name,
+                'regional_admin_email' => $user->email,
+            ])
             ->log('created');
 
         return redirect()
@@ -106,6 +111,10 @@ class RegionController extends Controller
         activity()
             ->performedOn($region)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'region_id' => $region->id,
+                'region_name' => $region->name,
+            ])
             ->log('updated');
 
         return redirect()
@@ -130,6 +139,10 @@ class RegionController extends Controller
         activity()
             ->performedOn($region)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'region_id' => $region->id,
+                'region_name' => $region->name,
+            ])
             ->log('deleted');
 
         $region->delete();

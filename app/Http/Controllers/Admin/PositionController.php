@@ -41,6 +41,10 @@ class PositionController extends Controller
         activity()
             ->performedOn($position)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'position_id' => $position->id,
+                'position_name' => $position->name,
+            ])
             ->log('created');
 
         return redirect()
@@ -62,6 +66,10 @@ class PositionController extends Controller
         activity()
             ->performedOn($position)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'position_id' => $position->id,
+                'position_name' => $position->name,
+            ])
             ->log('updated');
 
         return redirect()
@@ -80,6 +88,10 @@ class PositionController extends Controller
         activity()
             ->performedOn($position)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'position_id' => $position->id,
+                'position_name' => $position->name,
+            ])
             ->log('deleted');
 
         $position->delete();

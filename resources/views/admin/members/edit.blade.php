@@ -212,6 +212,8 @@
                             @enderror
                         </div>
 
+
+
                         {{-- Certificates Section --}}
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6"
                              x-data="{
@@ -354,6 +356,111 @@
                         </div>
                     </div>
                 </form>
+
+                {{-- Payments Section (outside main form to avoid nested form issue) --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                <svg class="size-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                {{ __('Payments') }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Record yearly membership payments.') }}</p>
+                        </div>
+                    </div>
+
+                    @php
+                        $currentYear = (int) now()->year;
+                        $paidYears = $member->payments->pluck('year_paid')->sort()->values()->toArray();
+                        $hasPaidCurrentYear = in_array($currentYear, $paidYears);
+                    @endphp
+
+                    <!-- Payment History -->
+                    @if(!empty($paidYears))
+                        <div class="mb-4 flex flex-wrap gap-2">
+                            @foreach($paidYears as $year)
+                                @php
+                                    $paymentForYear = $member->payments->firstWhere('year_paid', $year);
+                                @endphp
+                                @if($paymentForYear)
+                                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-sm">
+                                        <svg class="size-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="font-semibold text-green-700 dark:text-green-400">{{ $year }}</span>
+                                        <span class="text-xs text-green-600 dark:text-green-500">
+                                            {{ $paymentForYear->date_paid instanceof \Carbon\Carbon ? $paymentForYear->date_paid->format('M d, Y') : \Carbon\Carbon::parse($paymentForYear->date_paid)->format('M d, Y') }}
+                                        </span>
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.payments.destroy', $paymentForYear->id) }}"
+                                            onsubmit="return confirm('⚠️ DELETE PAYMENT RECORD for Year {{ $year }}?\n\nType OK to proceed to the second confirmation.')"
+                                            class="inline-flex"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="confirm_delete" value="1">
+                                            <label class="inline-flex items-center gap-1 text-xs text-red-600 cursor-pointer" title="{{ __('Delete') }}">
+                                                <input
+                                                    type="checkbox"
+                                                    name="confirm_text"
+                                                    value="DELETE"
+                                                    required
+                                                    class="sr-only peer"
+                                                    onchange="this.form.querySelector('button[type=submit]').disabled = !this.checked"
+                                                >
+                                                <svg class="size-3.5 peer-checked:text-red-700 text-red-400 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </label>
+                                            <button
+                                                type="submit"
+                                                disabled
+                                                class="text-[10px] font-semibold text-red-600 hover:text-red-800 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                            >
+                                                {{ __('Confirm Delete') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-400 dark:text-gray-500 italic mb-4">{{ __('No payments recorded yet.') }}</p>
+                    @endif
+
+                    <!-- Add Payment Button -->
+                    @if(!$hasPaidCurrentYear)
+                        <form
+                            method="POST"
+                            action="{{ route('admin.payments.store') }}"
+                            onsubmit="return confirm('Record payment for {{ $member->name }} — Year {{ $currentYear }}?\n\nThis action will be logged for audit purposes.')"
+                            class="flex items-center gap-3"
+                        >
+                            @csrf
+                            <input type="hidden" name="member_id" value="{{ $member->id }}">
+                            <input type="hidden" name="year_paid" value="{{ $currentYear }}">
+                            <button
+                                type="submit"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-green-500 transition"
+                            >
+                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                {{ __('Mark as Paid for :year', ['year' => $currentYear]) }}
+                            </button>
+                        </form>
+                    @else
+                        <div class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-400">
+                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ __('Paid for :year', ['year' => $currentYear]) }}
+                        </div>
+                    @endif
+                </div>
             </x-card>
         </div>
     </div>

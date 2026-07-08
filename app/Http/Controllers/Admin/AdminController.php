@@ -160,6 +160,11 @@ class AdminController extends Controller
         activity()
             ->performedOn($admin)
             ->causedBy(auth()->user())
+            ->withProperties([
+                'admin_id' => $admin->id,
+                'admin_name' => $admin->name,
+                'admin_email' => $admin->email,
+            ])
             ->log('deleted_admin');
 
         $admin->delete();
