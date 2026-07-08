@@ -22,5 +22,5 @@ Homestead.yaml
 Thumbs.db
 
 # Comment before deployment
-# /public/build       
+/public/build      
 /vendor 
