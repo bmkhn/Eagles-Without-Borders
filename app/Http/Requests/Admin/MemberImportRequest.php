@@ -15,14 +15,6 @@ class MemberImportRequest extends FormRequest
     {
         return [
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
-            'club_id' => ['required', 'integer', 'exists:clubs,id'],
-        ];
-    }
-
-    public function attributes(): array
-    {
-        return [
-            'club_id' => 'club',
         ];
     }
 }

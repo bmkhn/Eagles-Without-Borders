@@ -52,6 +52,30 @@
                         </div>
 
                         <div class="ml-auto flex items-center gap-2">
+                            <!-- Info tooltip (export & import) -->
+                            <div class="relative" x-data="{ showTooltip: false }">
+                                <svg
+                                    @mouseenter="showTooltip = true"
+                                    @mouseleave="showTooltip = false"
+                                    class="size-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div
+                                    x-show="showTooltip"
+                                    x-cloak
+                                    @mouseenter="showTooltip = true"
+                                    @mouseleave="showTooltip = false"
+                                    class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-xs leading-relaxed shadow-lg z-50"
+                                >
+                                    <p class="whitespace-nowrap">{{ __('Export: Download a CSV of the members shown on this page (applies your search and filters).') }}</p>
+                                    <p class="whitespace-nowrap">{{ __('Import: Upload a CSV file to add members. Clubs are resolved from the CSV.') }}</p>
+                                    <p class="whitespace-nowrap">{{ __('Duplicates are skipped. Scoped admins can only import within their scope.') }}</p>
+                                    <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                                </div>
+                            </div>
+
                             <!-- Export Button -->
                             <a
                                 href="{{ route('admin.members.export', request()->query()) }}"
@@ -212,28 +236,13 @@
                             {{ __('Import Members from CSV') }}
                         </h4>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                            {{ __('CSV must include columns: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.') }}
-                            {{ __('Duplicates (same name + contact number) will be skipped.') }}
-                            {{ __('National-level admins: Club/Region columns are used to resolve the club. Scoped admins: Club is validated against your scope.') }}
+                            {{ __('CSV must match the export format: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.') }}
+                            {{ __('Clubs are resolved from the CSV. Duplicates (same name + contact number) will be skipped.') }}
                         </p>
 
                         <form method="POST" action="{{ route('admin.members.import') }}" enctype="multipart/form-data">
                             @csrf
                             <div class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                                <div class="flex-1 w-full sm:w-auto">
-                                    <x-input-label for="import_club_id" :value="__('Target Club')" />
-                                    <select
-                                        id="import_club_id"
-                                        name="club_id"
-                                        required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                    >
-                                        <option value="">{{ __('Select club') }}</option>
-                                        @foreach($clubs as $club)
-                                            <option value="{{ $club->id }}">{{ $club->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
                                 <div class="flex-1 w-full sm:w-auto">
                                     <x-input-label for="import_file" :value="__('CSV File')" />
                                     <input

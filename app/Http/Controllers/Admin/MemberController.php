@@ -443,31 +443,23 @@ class MemberController extends Controller
 
     /**
      * Import members from CSV.
+     *
+     * CSV must match the export format: First Name, M.I., Last Name, Suffix,
+     * Contact Number, Club, Region, Position, Status.
+     *
+     * - The club is resolved from the CSV 'Club' column — no target club picker needed.
+     * - Club Admin: all rows must reference their club.
+     * - Regional Admin: all rows must reference clubs within their region.
+     * - Super/National Admin: club is resolved by name; region is validated if provided.
      */
     public function import(MemberImportRequest $request): RedirectResponse
     {
         $user = request()->user();
-        $clubId = $request->integer('club_id');
-        $club = Club::findOrFail($clubId);
 
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
         $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
         $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
-
-        // ── Scoping validation ─────────────────────────────────
-
-        // Club Admin: can only import to their own club
-        if ($isClubAdmin && (int) $clubId !== (int) $user->club_id) {
-            return redirect()
-                ->route('admin.members.index')
-                ->with('error', 'Club admins can only import members into their own club.');
-        }
-
-        // Regional Admin: can only import to clubs within their region
-        if ($isRegionalAdmin && (int) $club->region_id !== (int) $user->region_id) {
-            return redirect()
-                ->route('admin.members.index')
-                ->with('error', 'Regional admins can only import members into clubs within their region.');
-        }
 
         // ── Parse CSV ──────────────────────────────────────────
         $file = $request->file('file');
@@ -512,6 +504,56 @@ class MemberController extends Controller
             $colMap[$name] = $i;
         }
 
+        // ── Pre-read: collect all club names used in CSV for scope validation ──
+        $csvClubNames = [];
+        while (($row = fgetcsv($handle)) !== false) {
+            $row = array_map('trim', $row);
+            if (count($row) < 3 || (implode('', $row) === '')) {
+                continue;
+            }
+            $clubName = $row[$colMap['club']] ?? '';
+            if (!empty($clubName) && !in_array($clubName, $csvClubNames)) {
+                $csvClubNames[] = $clubName;
+            }
+        }
+
+        // ── Scope validation (Club Admin & Regional Admin) ─────────────────
+        if ($isClubAdmin) {
+            $userClub = Club::find($user->club_id);
+            $userClubName = $userClub?->name;
+            // Check all referenced clubs match the admin's club
+            foreach ($csvClubNames as $csvClubName) {
+                if ($csvClubName !== $userClubName) {
+                    fclose($handle);
+                    return redirect()
+                        ->route('admin.members.index')
+                        ->with('error', "Club admins can only import members into their own club ('{$userClubName}'). The CSV references '{$csvClubName}'.");
+                }
+            }
+        }
+
+        if ($isRegionalAdmin) {
+            $userRegion = Region::find($user->region_id);
+            $regionClubNames = Club::where('region_id', $user->region_id)->pluck('name')->all();
+            foreach ($csvClubNames as $csvClubName) {
+                if (!in_array($csvClubName, $regionClubNames)) {
+                    fclose($handle);
+                    return redirect()
+                        ->route('admin.members.index')
+                        ->with('error', "Regional admins can only import members into clubs within their region ('{$userRegion?->name}'). The CSV references '{$csvClubName}' which is not in your region.");
+                }
+            }
+        }
+
+        // ── Rewind file for processing ─────────────────────────────────────
+        rewind($handle);
+        // Skip BOM + header again
+        $bomCheck = fread($handle, 3);
+        if ($bomCheck !== "\xEF\xBB\xBF") {
+            rewind($handle);
+        }
+        fgetcsv($handle); // skip header
+
         // ── Process rows ───────────────────────────────────────
         $imported = 0;
         $skipped = 0;
@@ -546,39 +588,29 @@ class MemberController extends Controller
                 continue;
             }
 
-            // ── Club & Region validation per row ────────────────
-            $rowClubId = $clubId; // default to the selected club_id
-            if ($isSuperAdmin || $isNationalAdmin) {
-                // For national-level admins, resolve club by name from CSV
-                if (!empty($clubName)) {
-                    $resolvedClub = Club::where('name', $clubName)->first();
-                    if (!$resolvedClub) {
-                        $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found.";
-                        continue;
-                    }
-                    // Verify region matches if provided
-                    if (!empty($regionName)) {
-                        $resolvedRegion = Region::where('name', $regionName)->first();
-                        if (!$resolvedRegion) {
-                            $errors[] = "Row {$rowNumber}: Region '{$regionName}' not found.";
-                            continue;
-                        }
-                        if ((int) $resolvedClub->region_id !== (int) $resolvedRegion->id) {
-                            $errors[] = "Row {$rowNumber}: Club '{$clubName}' is not in Region '{$regionName}'.";
-                            continue;
-                        }
-                    }
-                    $rowClubId = $resolvedClub->id;
-                }
-            } elseif ($isRegionalAdmin && !empty($clubName)) {
-                $resolvedClub = Club::where('name', $clubName)
-                    ->where('region_id', $user->region_id)
-                    ->first();
-                if (!$resolvedClub) {
-                    $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found in your region.";
+            // ── Resolve club from CSV ──────────────────────────────
+            if (empty($clubName)) {
+                $errors[] = "Row {$rowNumber}: Club is required.";
+                continue;
+            }
+
+            $resolvedClub = Club::where('name', $clubName)->first();
+            if (!$resolvedClub) {
+                $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found.";
+                continue;
+            }
+
+            // Verify region matches if provided (Super/National Admin)
+            if (!empty($regionName) && ($isSuperAdmin || $isNationalAdmin)) {
+                $resolvedRegion = Region::where('name', $regionName)->first();
+                if (!$resolvedRegion) {
+                    $errors[] = "Row {$rowNumber}: Region '{$regionName}' not found.";
                     continue;
                 }
-                $rowClubId = $resolvedClub->id;
+                if ((int) $resolvedClub->region_id !== (int) $resolvedRegion->id) {
+                    $errors[] = "Row {$rowNumber}: Club '{$clubName}' is not in Region '{$regionName}'.";
+                    continue;
+                }
             }
 
             // Normalize status
@@ -601,7 +633,7 @@ class MemberController extends Controller
 
             // Check for exact duplicate (same first_name + last_name + contact_number in the same club)
             $duplicate = Member::query()
-                ->where('club_id', $rowClubId)
+                ->where('club_id', $resolvedClub->id)
                 ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
                 ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
                 ->where('contact_number', $contactNumber)
@@ -614,7 +646,7 @@ class MemberController extends Controller
 
             // Create member
             $member = new Member([
-                'club_id' => $rowClubId,
+                'club_id' => $resolvedClub->id,
                 'position_id' => $position->id,
                 'first_name' => $firstName,
                 'middle_initial' => $middleInitial ?: null,
@@ -624,7 +656,13 @@ class MemberController extends Controller
                 'status' => $statusNormalized,
             ]);
             $member->applySlugFromName();
-            $member->save();
+
+            try {
+                $member->save();
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                $skipped++;
+                continue;
+            }
 
             $imported++;
 
@@ -645,8 +683,6 @@ class MemberController extends Controller
                 'imported' => $imported,
                 'skipped' => $skipped,
                 'errors' => count($errors),
-                'club_id' => $clubId,
-                'club_name' => $club->name,
             ])
             ->log('imported_members');
 
