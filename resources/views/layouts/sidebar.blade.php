@@ -36,34 +36,11 @@
                     </a>
                 </li>
 
-                @if($isSuperAdmin)
-                    <!-- Super Admin Section -->
-                    <li class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
-                        <span x-show="!sidebarCollapsed" class="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __('Super Admin') }}</span>
-                    </li>
-
-                    <li>
-                        <a
-                            href="{{ route('admin.admins.index') }}"
-                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.admins.*') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
-                            title="{{ __('Admin Accounts') }}"
-                            :class="sidebarCollapsed ? 'justify-center px-0' : ''"
-                        >
-                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span x-show="!sidebarCollapsed">{{ __('Admin Accounts') }}</span>
-                        </a>
-                    </li>
-                @endif
+                <li>
+                    <div class="pt-1 mt-2 border-t border-gray-100 dark:border-gray-800"></div>
+                </li>
 
                 @if($isNationLevel || $isSuperAdmin)
-                    @if(!$isSuperAdmin)
-                        <li class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
-                            <span x-show="!sidebarCollapsed" class="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __('Admin') }}</span>
-                        </li>
-                    @endif
-
                     <li>
                         <a
                             href="{{ route('admin.regions.index') }}"
@@ -109,7 +86,7 @@
 
                 <!-- Regional Admin: Club Management -->
                 @if($isRegionalAdmin)
-                    <li class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
+                    <li>
                         <span x-show="!sidebarCollapsed" class="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __('Regional Management') }}</span>
                     </li>
 
@@ -131,9 +108,7 @@
                 <!-- Members Section (for all admin roles) -->
                 @if($isAdmin)
                     @if(!$isNationLevel && !$isSuperAdmin && !$isRegionalAdmin)
-                        <li class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
                             <span x-show="!sidebarCollapsed" class="px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __('Club Management') }}</span>
-                        </li>
                     @endif
 
                     <li>
@@ -147,21 +122,6 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                             </svg>
                             <span x-show="!sidebarCollapsed">{{ __('Members') }}</span>
-                        </a>
-                    </li>
-
-                    {{-- Recycle Bin --}}
-                    <li class="mt-0.5">
-                        <a
-                            href="{{ route('admin.members.trashed') }}"
-                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.members.trashed') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
-                            title="{{ __('Recycle Bin') }}"
-                            :class="sidebarCollapsed ? 'justify-center px-0' : ''"
-                        >
-                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                            <span x-show="!sidebarCollapsed">{{ __('Recycle Bin') }}</span>
                         </a>
                     </li>
 
@@ -180,6 +140,27 @@
                         </a>
                     </li>
 
+                    <li>
+                        <div class="pt-1 mt-2 border-t border-gray-100 dark:border-gray-800"></div>
+                    </li>
+
+                    <!-- Admin Accounts (Super Admin) -->
+                    @if($isSuperAdmin)
+                        <li>
+                            <a
+                                href="{{ route('admin.admins.index') }}"
+                                class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.admins.*') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
+                                title="{{ __('Admin Accounts') }}"
+                                :class="sidebarCollapsed ? 'justify-center px-0' : ''"
+                            >
+                                <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span x-show="!sidebarCollapsed">{{ __('Admin Accounts') }}</span>
+                            </a>
+                        </li>
+                    @endif
+
                     <!-- Audit Logs (Super Admin & National Admin) -->
                     @if($isSuperAdmin || $isNationalAdmin)
                         <li class="mt-1">
@@ -196,6 +177,21 @@
                             </a>
                         </li>
                     @endif
+
+                    {{-- Recycle Bin --}}
+                    <li class="mt-0.5">
+                        <a
+                            href="{{ route('admin.members.trashed') }}"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.members.trashed') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
+                            title="{{ __('Recycle Bin') }}"
+                            :class="sidebarCollapsed ? 'justify-center px-0' : ''"
+                        >
+                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span x-show="!sidebarCollapsed">{{ __('Recycle Bin') }}</span>
+                        </a>
+                    </li>
                 @endif
             </ul>
         </nav>
@@ -203,24 +199,8 @@
         <!-- Footer -->
         <div class="border-t border-gray-200 dark:border-gray-700 px-3 py-3">
             @if($user)
-                <!-- Dark Mode Toggle -->
-                <button
-                    @click="darkMode = !darkMode"
-                    class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition mb-1"
-                    :class="sidebarCollapsed ? 'justify-center px-0' : ''"
-                    title="{{ __('Toggle dark mode') }}"
-                >
-                    <svg x-show="!darkMode" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                    </svg>
-                    <svg x-show="darkMode" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                    </svg>
-                    <span x-show="!sidebarCollapsed" class="ml-2">{{ __('Dark Mode') }}</span>
-                </button>
-
                 <!-- User info and Sign Out -->
-                <div class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800">
+                <div>
                     <div x-show="!sidebarCollapsed" class="mb-2 text-xs text-gray-500 dark:text-gray-400 truncate px-1">
                         <span class="font-medium text-gray-700 dark:text-gray-300">{{ $user->name }}</span>
                         <br>
@@ -233,6 +213,22 @@
                         </span>
                     </div>
 
+                    <!-- Dark Mode Toggle -->
+                    <button
+                        @click="darkMode = !darkMode"
+                        class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition mb-1"
+                        :class="sidebarCollapsed ? 'justify-center px-0' : ''"
+                        title="{{ __('Toggle dark mode') }}"
+                    >
+                        <svg x-show="!darkMode" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="darkMode" class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span x-show="!sidebarCollapsed" class="ml-1">{{ __('Dark Mode') }}</span>
+                    </button>
+
                     <!-- Settings -->
                     <a
                         href="{{ route('profile.edit') }}"
@@ -244,7 +240,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
-                        <span x-show="!sidebarCollapsed">{{ __('Account Settings') }}</span>
+                        <span x-show="!sidebarCollapsed" class="ml-1">{{ __('Account Settings') }}</span>
                     </a>
 
                     <form method="POST" action="{{ route('logout') }}">

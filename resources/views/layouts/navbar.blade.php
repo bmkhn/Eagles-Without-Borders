@@ -13,8 +13,10 @@
                     </svg>
                 </button>
 
-                <span class="text-amber-600 dark:text-amber-400 font-extrabold text-base tracking-tight whitespace-nowrap">Eagles</span>
-                <span class="text-gray-500 dark:text-gray-400 font-light text-sm whitespace-nowrap">Without Borders</span>
+                                <div class="flex items-center gap-1.5">
+                    <span class="text-amber-600 dark:text-amber-400 text-base tracking-tight whitespace-nowrap" style="font-family: 'Brush Script', cursive; line-height: 1;">Eagles</span>
+                    <span class="text-gray-500 dark:text-gray-400 font-light text-sm whitespace-nowrap">Without Borders</span>
+                </div>
             </div>
 
             <div class="flex items-center gap-3">

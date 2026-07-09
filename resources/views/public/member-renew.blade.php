@@ -11,7 +11,19 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
 
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            @font-face {
+                font-family: 'Brush Script';
+                src: url('/fonts/BrushScriptOpti-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
+
+        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @endif
 
         <style>
             @keyframes fadeInUp {
@@ -31,7 +43,7 @@
                 <div class="flex items-center justify-between h-16">
                     <a href="/" class="flex items-center gap-2">
                         <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
-                        <span class="text-amber-500 font-extrabold text-lg sm:text-xl tracking-tight">Eagles</span>
+                        <span class="text-amber-500 text-lg sm:text-xl tracking-tight" style="font-family: 'Brush Script', cursive; padding-right: 0.08em; line-height: 1.1;">Eagles</span>
                         <span class="text-white/70 font-light text-lg sm:text-xl tracking-tight whitespace-nowrap">Without Borders</span>
                     </a>
 
@@ -145,7 +157,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="text-amber-500 font-extrabold">Eagles</span>
+                        <span class="text-amber-500" style="font-family: 'Brush Script', cursive; padding-right: 0.08em; line-height: 1.1;">Eagles</span>
                         <span class="text-white/50 font-light">Without Borders</span>
                     </div>
                     <div class="flex items-center gap-4">

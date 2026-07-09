@@ -25,11 +25,11 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if(session('success'))
-                <x-alert type="success">{{ session('success') }}</x-alert>
+                <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
             @endif
 
             @if(session('error'))
-                <x-alert type="danger">{{ session('error') }}</x-alert>
+                <x-alert type="danger" class="mb-4">{{ session('error') }}</x-alert>
             @endif
 
             <x-card title="Deleted Members">
@@ -56,7 +56,7 @@
                                 {{ __('Search') }}
                             </button>
 
-                            @if($q !== '' || $filterClubId || $filterPositionId)
+                            @if($q !== '' || $filterRegionId || $filterClubId || $filterPositionId)
                                 <a
                                     href="{{ route('admin.members.trashed') }}"
                                     class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
@@ -67,22 +67,50 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        @if($isSuperAdmin || $isNationalAdmin)
+                            <div>
+                                <x-input-label for="region_id" :value="__('Region')" />
+                                <select
+                                    id="region_id"
+                                    name="region_id"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    onchange="this.form.submit()"
+                                >
+                                    <option value="">{{ __('All Regions') }}</option>
+                                    @foreach($regions as $region)
+                                        <option value="{{ $region->id }}" @selected($filterRegionId === $region->id)>
+                                            {{ $region->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @elseif($isRegionalAdmin || $isClubAdmin)
+                            <div>
+                                <x-input-label :value="__('Region')" />
+                                <p class="mt-1.5 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $userRegionName ?? '—' }}</p>
+                            </div>
+                        @endif
+
                         <div>
                             <x-input-label for="club_id" :value="__('Club')" />
-                            <select
-                                id="club_id"
-                                name="club_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                onchange="this.form.submit()"
-                            >
-                                <option value="">{{ __('All Clubs') }}</option>
-                                @foreach($clubs as $club)
-                                    <option value="{{ $club->id }}" @selected($filterClubId === $club->id)>
-                                        {{ $club->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if($isClubAdmin)
+                                <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{{ $clubs->first()?->name ?? '—' }}</p>
+                            @else
+                                <select
+                                    id="club_id"
+                                    name="club_id"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    onchange="this.form.submit()"
+                                >
+                                    <option value="">{{ __('All Clubs') }}</option>
+                                    @foreach($clubs as $club)
+                                        <option value="{{ $club->id }}" @selected($filterClubId === $club->id)>
+                                            {{ $club->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
 
                         <div>

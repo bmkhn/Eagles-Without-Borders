@@ -712,6 +712,7 @@ class MemberController extends Controller
         $user = request()->user();
 
         $q = request()->string('q')->trim()->toString();
+        $filterRegionId = request()->integer('region_id');
         $filterClubId = request()->integer('club_id');
         $filterPositionId = request()->integer('position_id');
 
@@ -730,6 +731,12 @@ class MemberController extends Controller
         if ($isRegionalAdmin) {
             $membersQuery->whereHas('club', function ($q) use ($user) {
                 $q->where('region_id', $user->region_id);
+            });
+        }
+
+        if ($filterRegionId && ($isSuperAdmin || $isNationalAdmin)) {
+            $membersQuery->whereHas('club', function ($q) use ($filterRegionId) {
+                $q->where('region_id', $filterRegionId);
             });
         }
 
@@ -755,24 +762,50 @@ class MemberController extends Controller
 
         $trashedCount = Member::onlyTrashed()->count();
 
+        $regions = ($isSuperAdmin || $isNationalAdmin) ? Region::query()->orderBy('name')->get() : collect();
+
         $clubsQuery = Club::query()->orderBy('name');
         if ($isRegionalAdmin) {
             $clubsQuery->where('region_id', $user->region_id);
+        }
+        if ($filterRegionId && ($isSuperAdmin || $isNationalAdmin)) {
+            $clubsQuery->where('region_id', $filterRegionId);
         }
         if ($isClubAdmin) {
             $clubsQuery->where('id', $user->club_id);
         }
 
-        $positions = Position::query()->orderBy('name')->get();
+        $positionsQuery = Position::query()->orderBy('name');
+        if ($isClubAdmin || $isRegionalAdmin) {
+            $positionsQuery->where('name', '!=', 'National President');
+        }
+        $positions = $positionsQuery->get();
+
+        // Resolve the region name for scoped admins
+        $userRegionName = null;
+        if ($isRegionalAdmin && $user->region_id) {
+            $region = \App\Models\Region::find($user->region_id);
+            $userRegionName = $region?->name;
+        } elseif ($isClubAdmin && $user->club_id) {
+            $club = \App\Models\Club::find($user->club_id);
+            $userRegionName = $club?->region?->name;
+        }
 
         return view('admin.members.trashed', [
             'trashedMembers' => $trashedMembers,
             'q' => $q,
+            'filterRegionId' => $filterRegionId,
             'filterClubId' => $filterClubId,
             'filterPositionId' => $filterPositionId,
             'trashedCount' => $trashedCount,
+            'regions' => $regions,
             'clubs' => $clubsQuery->get(),
             'positions' => $positions,
+            'isSuperAdmin' => $isSuperAdmin,
+            'isNationalAdmin' => $isNationalAdmin,
+            'isRegionalAdmin' => $isRegionalAdmin,
+            'isClubAdmin' => $isClubAdmin,
+            'userRegionName' => $userRegionName,
         ]);
     }
 

@@ -13,7 +13,16 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
+        <style>
+            @font-face {
+                font-family: 'Brush Script';
+                src: url('/fonts/BrushScriptOpti-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased bg-gray-950">
@@ -27,13 +36,11 @@
             <!-- Logo -->
             <div class="relative mb-8">
                 <a href="/" class="flex flex-col items-center gap-3 group">
-                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-white/10 flex items-center justify-center p-4 group-hover:border-amber-500/30 group-hover:shadow-lg group-hover:shadow-amber-500/10 transition-all duration-300">
-                        <x-application-logo class="w-full h-full" />
-                    </div>
-                    <div class="text-center">
-                        <span class="text-amber-500 font-extrabold text-2xl tracking-tight">Eagles</span>
-                        <span class="text-white/40 font-light text-2xl tracking-tight">Without Borders</span>
-                    </div>
+                            <img src="{{ asset('images/logo.png') }}" alt="Eagles Without Borders" class="h-24 w-auto -mb-2">
+                            <div class="text-center">
+                                <span class="text-amber-500 text-2xl tracking-tight" style="font-family: 'Brush Script', cursive; padding-right: 0.12em; line-height: 1.1;">Eagles</span>
+                                <span class="text-white/40 font-light text-2xl tracking-tight">Without Borders</span>
+                            </div>
                 </a>
             </div>
 

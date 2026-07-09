@@ -12,6 +12,16 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <style>
+            @font-face {
+                font-family: 'Brush Script';
+                src: url('/fonts/BrushScriptOpti-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <script>

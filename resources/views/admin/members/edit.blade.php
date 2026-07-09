@@ -538,8 +538,27 @@
                     @endif
 
                     <!-- Add Payment Form -->
-                    <div class="mt-4 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30">
+                    <div
+                        class="mt-4 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30"
+                        x-data="{
+                            paidYears: @js($paidYears),
+                            selectedYear: {{ old('year_paid', $currentYear) }},
+                            get isYearPaid() {
+                                return this.paidYears.includes(this.selectedYear);
+                            }
+                        }"
+                    >
                         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ __('Record a Payment') }}</h4>
+
+                        <template x-if="isYearPaid">
+                            <div class="mb-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                                <svg class="size-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <span x-text="'Year ' + selectedYear + ' has already been paid for this member.'"></span>
+                            </div>
+                        </template>
+
                         <form
                             method="POST"
                             action="{{ route('admin.payments.store') }}"
@@ -555,6 +574,7 @@
                                     id="new_payment_year"
                                     name="year_paid"
                                     type="number"
+                                    x-model.number="selectedYear"
                                     value="{{ old('year_paid', $currentYear) }}"
                                     min="2000"
                                     max="2099"
@@ -577,11 +597,10 @@
 
                             <button
                                 type="submit"
-                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-green-500 transition"
+                                :disabled="isYearPaid"
+                                :class="isYearPaid ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700'"
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md font-semibold text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
                                 {{ __('Record Payment') }}
                             </button>
                         </form>

@@ -1,20 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
-                {{ __('Record Payment') }}
-            </h2>
-            <a
-                href="{{ route('admin.payments.index') }}"
-                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-                {{ __('Back to Payments') }}
-            </a>
-        </div>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
+            {{ __('Create Payment') }}
+        </h2>
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
                 <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
             @endif
@@ -96,17 +88,14 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-green-500 transition"
+                                class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                </svg>
-                                {{ __('Record Payment') }}
+                                {{ __('Save Payment') }}
                             </button>
 
                             <a
                                 href="{{ route('admin.payments.index') }}"
-                                class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
                             >
                                 {{ __('Cancel') }}
                             </a>

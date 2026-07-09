@@ -11,6 +11,16 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:300,400,500,600,700,800&display=swap" rel="stylesheet" />
 
+        <style>
+            @font-face {
+                font-family: 'Brush Script';
+                src: url('/fonts/BrushScriptOpti-Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        </style>
+
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @else
@@ -44,7 +54,7 @@
                 <div class="flex items-center justify-between h-16">
                     <a href="/" class="flex items-center gap-2">
                         <img src="{{ asset('images/logo.png') }}" alt="" class="h-8 w-auto">
-                        <span class="text-amber-500 font-extrabold text-lg sm:text-xl tracking-tight">Eagles</span>
+                        <span class="text-amber-500 text-lg sm:text-xl tracking-tight" style="font-family: 'Brush Script', cursive; padding-right: 0.08em; line-height: 1.1;">Eagles</span>
                         <span class="text-white/70 font-light text-lg sm:text-xl tracking-tight whitespace-nowrap">Without Borders</span>
                     </a>
 
@@ -79,7 +89,7 @@
 
                     <h1 class="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight mb-6">
                         Become an
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600">Eagle</span>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600" style="font-family: 'Brush Script', cursive; padding-right: 0.2em; line-height: 1.1;">Eagle</span>
                     </h1>
 
                     <p class="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -279,7 +289,7 @@
 
                     <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-tight">
                         Are You Ready to Become an
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">Eagle</span>?
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600" style="font-family: 'Brush Script', cursive; padding-right: 0.2em; line-height: 1.1;">Eagle</span>?
                     </h2>
 
                     <p class="text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -304,7 +314,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="text-amber-500 font-extrabold">Eagles</span>
+                        <span class="text-amber-500" style="font-family: 'Brush Script', cursive; padding-right: 0.08em; line-height: 1.1;">Eagles</span>
                         <span class="text-white/50 font-light">Without Borders</span>
                     </div>
                     <div class="flex items-center gap-4">
