@@ -19,9 +19,10 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PermissionSeeder::class,
             PositionSeeder::class,
-            DefaultRegionClubPresidentSeeder::class,
+            UserSeeder::class,
             MemberSeeder::class,
             CertificateSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }

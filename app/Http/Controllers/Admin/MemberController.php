@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\MemberUpdateRequest;
 use App\Models\Certificate;
 use App\Models\Club;
 use App\Models\Member;
+use App\Models\Payment;
 use App\Models\Position;
 use App\Models\Region;
 use Illuminate\Http\RedirectResponse;
@@ -187,7 +188,7 @@ class MemberController extends Controller
 
         $member = new Member($data);
         $member->applySlugFromName();
-        $member->status = $member->status ?? 'active';
+        $member->status = 'inactive'; // New members start as inactive until they pay
 
         if ($request->hasFile('profile_picture')) {
             $member->profile_picture = $this->storeProfilePicture($request->file('profile_picture'));
@@ -262,11 +263,13 @@ class MemberController extends Controller
             'suffix' => $member->getOriginal('suffix'),
             'club_id' => $member->getOriginal('club_id'),
             'position_id' => $member->getOriginal('position_id'),
-            'status' => $member->getOriginal('status'),
             'contact_number' => $member->getOriginal('contact_number'),
         ];
 
         $data = $request->safe()->except(['profile_picture', 'remove_photo', 'certificates']);
+
+        // Status is auto-managed based on payments — do not allow manual changes
+        unset($data['status']);
 
         if ($isClubAdmin) {
             $data['club_id'] = $user->club_id;
@@ -300,7 +303,6 @@ class MemberController extends Controller
             'suffix' => $member->suffix,
             'club_id' => $member->club_id,
             'position_id' => $member->position_id,
-            'status' => $member->status,
             'contact_number' => $member->contact_number,
         ];
 
@@ -644,7 +646,7 @@ class MemberController extends Controller
                 continue;
             }
 
-            // Create member
+            // Create member (always starts as inactive; status is auto-managed by payments)
             $member = new Member([
                 'club_id' => $resolvedClub->id,
                 'position_id' => $position->id,
@@ -653,7 +655,7 @@ class MemberController extends Controller
                 'last_name' => $lastName,
                 'suffix' => $suffix ?: null,
                 'contact_number' => $contactNumber,
-                'status' => $statusNormalized,
+                'status' => 'inactive',
             ]);
             $member->applySlugFromName();
 
@@ -702,16 +704,137 @@ class MemberController extends Controller
             ->with($flashType, $message);
     }
 
-    public function destroy(Member $member): RedirectResponse
+    /**
+     * Display soft-deleted (trashed) members.
+     */
+    public function trashed(): View
     {
-        if ($member->profile_picture) {
-            Storage::disk('public')->delete($member->profile_picture);
+        $user = request()->user();
+
+        $q = request()->string('q')->trim()->toString();
+        $filterClubId = request()->integer('club_id');
+        $filterPositionId = request()->integer('position_id');
+
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
+        $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
+        $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
+
+        $membersQuery = Member::onlyTrashed()
+            ->with(['club.region', 'position']);
+
+        if ($isClubAdmin) {
+            $membersQuery->where('club_id', $user->club_id);
         }
 
+        if ($isRegionalAdmin) {
+            $membersQuery->whereHas('club', function ($q) use ($user) {
+                $q->where('region_id', $user->region_id);
+            });
+        }
+
+        if ($filterClubId) {
+            $membersQuery->where('club_id', $filterClubId);
+        }
+
+        if ($filterPositionId) {
+            $membersQuery->where('position_id', $filterPositionId);
+        }
+
+        if ($q !== '') {
+            $membersQuery->where(function ($query) use ($q) {
+                $query->where('first_name', 'like', '%' . $q . '%')
+                    ->orWhere('last_name', 'like', '%' . $q . '%')
+                    ->orWhere('contact_number', 'like', '%' . $q . '%')
+                    ->orWhere('slug', 'like', '%' . $q . '%');
+            });
+        }
+
+        $trashedMembers = $membersQuery->orderByDesc('deleted_at')
+            ->paginate(10)->withQueryString();
+
+        $trashedCount = Member::onlyTrashed()->count();
+
+        $clubsQuery = Club::query()->orderBy('name');
+        if ($isRegionalAdmin) {
+            $clubsQuery->where('region_id', $user->region_id);
+        }
+        if ($isClubAdmin) {
+            $clubsQuery->where('id', $user->club_id);
+        }
+
+        $positions = Position::query()->orderBy('name')->get();
+
+        return view('admin.members.trashed', [
+            'trashedMembers' => $trashedMembers,
+            'q' => $q,
+            'filterClubId' => $filterClubId,
+            'filterPositionId' => $filterPositionId,
+            'trashedCount' => $trashedCount,
+            'clubs' => $clubsQuery->get(),
+            'positions' => $positions,
+        ]);
+    }
+
+    /**
+     * Restore a soft-deleted member along with their certificates and payments.
+     */
+    public function restore(int $id): RedirectResponse
+    {
+        $member = Member::onlyTrashed()->findOrFail($id);
+
+        // Scope check
+        $user = request()->user();
+        if ($user->hasRole('club-admin') && $user->club_id && (int) $member->club_id !== (int) $user->club_id) {
+            abort(403, 'You can only restore members in your club.');
+        }
+        if ($user->hasRole('regional-admin') && $user->region_id && $member->club) {
+            $memberRegionId = $member->club->region_id;
+            if ((int) $memberRegionId !== (int) $user->region_id) {
+                abort(403, 'You can only restore members in your region.');
+            }
+        }
+
+        // Restore related records too
+        Certificate::where('member_id', $member->id)->restore();
+        Payment::where('member_id', $member->id)->restore();
+
+        $member->restore();
+
+        // Re-evaluate status after restoring
+        $member->updateStatusFromPayments();
+
+        activity()
+            ->performedOn($member)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'slug' => $member->slug,
+            ])
+            ->log('restored');
+
+        return redirect()
+            ->route('admin.members.trashed')
+            ->with('success', "Member '{$member->name}' restored successfully.");
+    }
+
+    public function destroy(Member $member): RedirectResponse
+    {
+        // Soft-delete related records first
         foreach ($member->certificates as $cert) {
             if ($cert->file) {
                 Storage::disk('public')->delete($cert->file);
             }
+            $cert->delete(); // soft delete
+        }
+
+        foreach ($member->payments as $payment) {
+            $payment->delete(); // soft delete
+        }
+
+        if ($member->profile_picture) {
+            Storage::disk('public')->delete($member->profile_picture);
         }
 
         activity()
@@ -724,11 +847,66 @@ class MemberController extends Controller
             ])
             ->log('deleted');
 
-        $member->delete();
+        $member->delete(); // soft delete
 
         return redirect()
             ->route('admin.members.index')
-            ->with('success', 'Member deleted successfully.');
+            ->with('success', 'Member moved to trash.');
+    }
+
+    /**
+     * Permanently delete a trashed member, their certificates (files + records), and payments.
+     */
+    public function forceDestroy(int $id): RedirectResponse
+    {
+        $member = Member::onlyTrashed()->findOrFail($id);
+
+        // Scope check
+        $user = request()->user();
+        if ($user->hasRole('club-admin') && $user->club_id && (int) $member->club_id !== (int) $user->club_id) {
+            abort(403, 'You can only force-delete members in your club.');
+        }
+        if ($user->hasRole('regional-admin') && $user->region_id && $member->club) {
+            $memberRegionId = $member->club->region_id;
+            if ((int) $memberRegionId !== (int) $user->region_id) {
+                abort(403, 'You can only force-delete members in your region.');
+            }
+        }
+
+        // Permanently delete certificate files and records
+        $certificates = Certificate::where('member_id', $member->id)->withTrashed()->get();
+        foreach ($certificates as $cert) {
+            if ($cert->file) {
+                Storage::disk('public')->delete($cert->file);
+            }
+            $cert->forceDelete();
+        }
+
+        // Permanently delete payments
+        Payment::where('member_id', $member->id)->withTrashed()->forceDelete();
+
+        // Delete profile picture
+        if ($member->profile_picture) {
+            Storage::disk('public')->delete($member->profile_picture);
+        }
+
+        $name = $member->name;
+
+        activity()
+            ->performedOn($member)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'slug' => $member->slug,
+            ])
+            ->log('force_deleted');
+
+        $member->forceDelete();
+
+        return redirect()
+            ->route('admin.members.trashed')
+            ->with('success', "Member '{$name}' permanently deleted.");
     }
 
     /**

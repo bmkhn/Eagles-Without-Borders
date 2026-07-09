@@ -1,0 +1,157 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
+                {{ __('Payments') }}
+            </h2>
+            <a
+                href="{{ route('admin.payments.create') }}"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-green-500 transition"
+            >
+                <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                {{ __('Record Payment') }}
+            </a>
+        </div>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if (session('success'))
+                <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+            @endif
+            @if (session('error'))
+                <x-alert type="danger" class="mb-4">{{ session('error') }}</x-alert>
+            @endif
+
+            <x-card title="All Payments">
+                {{-- Filters --}}
+                <form method="GET" action="{{ route('admin.payments.index') }}" class="mb-4 flex items-end gap-3 flex-wrap">
+                    <div>
+                        <x-input-label for="q" :value="__('Search Member')" />
+                        <input
+                            id="q"
+                            name="q"
+                            type="text"
+                            value="{{ $filterMemberName }}"
+                            placeholder="{{ __('Name...') }}"
+                            class="mt-1 w-48 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        >
+                    </div>
+
+                    <div>
+                        <x-input-label for="year" :value="__('Year')" />
+                        <select
+                            id="year"
+                            name="year"
+                            class="mt-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        >
+                            <option value="">{{ __('All Years') }}</option>
+                            @foreach($years as $y)
+                                <option value="{{ $y }}" @selected($filterYear == $y)>{{ $y }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if($clubs->isNotEmpty())
+                        <div>
+                            <x-input-label for="club_id" :value="__('Club')" />
+                            <select
+                                id="club_id"
+                                name="club_id"
+                                class="mt-1 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                            >
+                                <option value="">{{ __('All Clubs') }}</option>
+                                @foreach($clubs as $club)
+                                    <option value="{{ $club->id }}" @selected($filterClubId == $club->id)>
+                                        {{ $club->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-500 transition"
+                    >
+                        {{ __('Filter') }}
+                    </button>
+
+                    <a
+                        href="{{ route('admin.payments.index') }}"
+                        class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                    >
+                        {{ __('Clear') }}
+                    </a>
+                </form>
+
+                {{-- Payments Table --}}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <x-table-head>{{ __('Member') }}</x-table-head>
+                                <x-table-head>{{ __('Club') }}</x-table-head>
+                                <x-table-head>{{ __('Year Paid') }}</x-table-head>
+                                <x-table-head>{{ __('Date of Payment') }}</x-table-head>
+                                <x-table-head class="text-right">{{ __('Actions') }}</x-table-head>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @forelse($payments as $payment)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                    <x-table-column>
+                                        <a
+                                            href="{{ route('admin.members.edit', $payment->member) }}"
+                                            class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            {{ $payment->member?->name ?? '—' }}
+                                        </a>
+                                    </x-table-column>
+                                    <x-table-column class="text-gray-700 dark:text-gray-300">
+                                        {{ $payment->member?->club?->name ?? '—' }}
+                                    </x-table-column>
+                                    <x-table-column>
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                            {{ $payment->year_paid }}
+                                        </span>
+                                    </x-table-column>
+                                    <x-table-column class="text-gray-600 dark:text-gray-400">
+                                        {{ $payment->date_paid instanceof \Carbon\Carbon ? $payment->date_paid->format('M d, Y') : \Carbon\Carbon::parse($payment->date_paid)->format('M d, Y') }}
+                                    </x-table-column>
+                                    <x-table-column class="text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <a
+                                                href="{{ route('admin.payments.edit', $payment) }}"
+                                                class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition"
+                                            >
+                                                <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                {{ __('Edit') }}
+                                            </a>
+                                        </div>
+                                    </x-table-column>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <x-table-column colspan="5">
+                                        <p class="text-center text-gray-400 dark:text-gray-500 italic py-8">
+                                            {{ __('No payments found.') }}
+                                        </p>
+                                    </x-table-column>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4">
+                    {{ $payments->links() }}
+                </div>
+            </x-card>
+        </div>
+    </div>
+</x-app-layout>

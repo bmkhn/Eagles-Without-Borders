@@ -92,7 +92,7 @@ class MemberSeeder extends Seeder
                 'middle_initial' => $npData['middle_initial'],
                 'last_name' => $npData['last_name'],
                 'suffix' => $npData['suffix'],
-                'status' => 'active',
+                'status' => 'inactive', // auto-managed by payments
                 'contact_number' => '09170001001',
             ]);
             $np->applySlugFromName();
@@ -122,7 +122,7 @@ class MemberSeeder extends Seeder
                     'middle_initial' => $memberData['middle_initial'],
                     'last_name' => $memberData['last_name'],
                     'suffix' => $memberData['suffix'],
-                    'status' => $i % 5 === 0 ? 'inactive' : 'active',
+                    'status' => 'inactive', // auto-managed by payments
                     'contact_number' => $contactNumber,
                 ]);
 

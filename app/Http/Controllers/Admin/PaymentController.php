@@ -3,17 +3,109 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Club;
 use App\Models\Member;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
     /**
+     * Display a paginated list of payments with filters.
+     */
+    public function index(): View
+    {
+        $user = request()->user();
+
+        $filterYear = request()->integer('year');
+        $filterClubId = request()->integer('club_id');
+        $filterMemberName = request()->string('q')->trim()->toString();
+
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
+        $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
+        $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
+
+        $paymentsQuery = Payment::query()
+            ->with(['member.club.region', 'member.position']);
+
+        // Scope
+        if ($isClubAdmin) {
+            $paymentsQuery->whereHas('member', fn ($q) => $q->where('club_id', $user->club_id));
+        } elseif ($isRegionalAdmin) {
+            $paymentsQuery->whereHas('member.club', fn ($q) => $q->where('region_id', $user->region_id));
+        }
+
+        if ($filterYear) {
+            $paymentsQuery->where('year_paid', $filterYear);
+        }
+
+        if ($filterClubId && ($isSuperAdmin || $isNationalAdmin)) {
+            $paymentsQuery->whereHas('member', fn ($q) => $q->where('club_id', $filterClubId));
+        }
+
+        if ($filterMemberName !== '') {
+            $paymentsQuery->whereHas('member', function ($q) use ($filterMemberName) {
+                $q->where('first_name', 'like', '%' . $filterMemberName . '%')
+                  ->orWhere('last_name', 'like', '%' . $filterMemberName . '%');
+            });
+        }
+
+        $payments = $paymentsQuery->orderByDesc('year_paid')
+            ->orderByDesc('date_paid')
+            ->paginate(20)
+            ->withQueryString();
+
+        $clubs = ($isSuperAdmin || $isNationalAdmin)
+            ? Club::query()->orderBy('name')->get()
+            : collect();
+
+        $years = range(now()->year, 2020);
+
+        return view('admin.payments.index', [
+            'payments' => $payments,
+            'clubs' => $clubs,
+            'years' => $years,
+            'filterYear' => $filterYear,
+            'filterClubId' => $filterClubId,
+            'filterMemberName' => $filterMemberName,
+        ]);
+    }
+
+    /**
+     * Show the form to record a new payment.
+     */
+    public function create(): View
+    {
+        $user = request()->user();
+
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
+        $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
+        $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
+
+        $membersQuery = Member::query()->with(['club.region', 'position'])->orderBy('last_name');
+
+        if ($isClubAdmin) {
+            $membersQuery->where('club_id', $user->club_id);
+        } elseif ($isRegionalAdmin) {
+            $membersQuery->whereHas('club', fn ($q) => $q->where('region_id', $user->region_id));
+        }
+
+        $members = $membersQuery->get();
+
+        return view('admin.payments.create', [
+            'members' => $members,
+            'currentYear' => (int) now()->year,
+        ]);
+    }
+
+    /**
      * Store a new payment (record a member as paid for a year).
-     * This is a sensitive operation — requires confirmation and is heavily logged.
+     * Auto-updates the member's status based on the current year.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -24,10 +116,21 @@ class PaymentController extends Controller
                 'integer',
                 'min:2000',
                 'max:2099',
-                Rule::unique('payments', 'year_paid')
-                    ->where('member_id', $request->integer('member_id')),
             ],
+            'date_paid' => ['nullable', 'date'],
         ]);
+
+        // Check uniqueness manually to provide a friendly error
+        $exists = Payment::where('member_id', $validated['member_id'])
+            ->where('year_paid', $validated['year_paid'])
+            ->exists();
+
+        if ($exists) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'This member already has a payment recorded for Year ' . $validated['year_paid'] . '.');
+        }
 
         $member = Member::with('club')->findOrFail($validated['member_id']);
 
@@ -46,8 +149,11 @@ class PaymentController extends Controller
         $payment = Payment::create([
             'member_id' => $member->id,
             'year_paid' => $validated['year_paid'],
-            'date_paid' => now(),
+            'date_paid' => $validated['date_paid'] ?? now(),
         ]);
+
+        // Auto-update member status based on current year payment
+        $member->updateStatusFromPayments();
 
         // Log with separate payment log name for audit trail
         activity('payment')
@@ -57,18 +163,105 @@ class PaymentController extends Controller
                 'member_id' => $member->id,
                 'member_name' => $member->name,
                 'year_paid' => $validated['year_paid'],
+                'date_paid' => $payment->date_paid->format('Y-m-d'),
                 'action' => 'record_payment',
             ])
             ->log('payment_recorded');
 
-        return redirect()
-            ->route('admin.members.edit', $member)
+        // Determine redirect: if _redirect is explicitly provided (e.g. from inline form), use it;
+        // otherwise redirect to the payments index (standalone create page).
+        if ($request->has('_redirect')) {
+            $redirectTo = $request->input('_redirect');
+        } else {
+            $redirectTo = route('admin.payments.index');
+        }
+
+        return redirect($redirectTo)
             ->with('success', "Payment recorded for {$member->name} — Year {$validated['year_paid']}.");
     }
 
     /**
+     * Show the form to edit a payment record.
+     */
+    public function edit(Payment $payment): View
+    {
+        $payment->load(['member.club.region', 'member.position']);
+
+        return view('admin.payments.edit', [
+            'payment' => $payment,
+        ]);
+    }
+
+    /**
+     * Update a payment record (year_paid and/or date_paid).
+     * Re-evaluates the member's status after the update.
+     */
+    public function update(Request $request, Payment $payment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'year_paid' => [
+                'required',
+                'integer',
+                'min:2000',
+                'max:2099',
+            ],
+            'date_paid' => ['nullable', 'date'],
+        ]);
+
+        // Check uniqueness excluding this payment
+        $exists = Payment::where('member_id', $payment->member_id)
+            ->where('year_paid', $validated['year_paid'])
+            ->where('id', '!=', $payment->id)
+            ->exists();
+
+        if ($exists) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'This member already has a payment recorded for Year ' . $validated['year_paid'] . '.');
+        }
+
+        $oldYear = $payment->year_paid;
+        $oldDate = $payment->date_paid?->format('Y-m-d');
+
+        $payment->update([
+            'year_paid' => $validated['year_paid'],
+            'date_paid' => $validated['date_paid'] ?? $payment->date_paid,
+        ]);
+
+        // Re-evaluate member status (the year may have changed)
+        $member = $payment->member;
+        $member->updateStatusFromPayments();
+
+        activity('payment')
+            ->performedOn($payment)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'changes' => [
+                    'year_paid' => ['old' => $oldYear, 'new' => $validated['year_paid']],
+                    'date_paid' => ['old' => $oldDate, 'new' => $validated['date_paid'] ?? $payment->date_paid->format('Y-m-d')],
+                ],
+                'action' => 'update_payment',
+            ])
+            ->log('payment_updated');
+
+        // Determine redirect: if _redirect is explicitly provided, use it;
+        // otherwise redirect to the member edit page (inline edit) or payments index (standalone edit)
+        if ($request->has('_redirect')) {
+            $redirectTo = $request->input('_redirect');
+        } else {
+            $redirectTo = route('admin.payments.index');
+        }
+
+        return redirect($redirectTo)
+            ->with('success', "Payment updated for {$member->name} — Year {$validated['year_paid']}.");
+    }
+
+    /**
      * Delete a payment record.
-     * Very sensitive — requires double confirmation and heavy logging.
+     * Re-evaluates the member's status after deletion.
      */
     public function destroy(Request $request, Payment $payment): RedirectResponse
     {
@@ -93,6 +286,11 @@ class PaymentController extends Controller
             ->log('payment_deleted');
 
         $payment->delete();
+
+        // Re-evaluate member status (may have lost current year payment)
+        if ($member) {
+            $member->updateStatusFromPayments();
+        }
 
         return redirect()
             ->route('admin.members.edit', $member)

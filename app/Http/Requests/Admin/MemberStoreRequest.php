@@ -30,7 +30,6 @@ class MemberStoreRequest extends FormRequest
                 'max:255',
             ],
             'suffix' => ['nullable', 'string', 'max:50'],
-            'status' => ['sometimes', 'string', 'in:active,inactive'],
             'contact_number' => ['required', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
 

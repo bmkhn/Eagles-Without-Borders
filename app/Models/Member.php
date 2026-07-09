@@ -223,4 +223,16 @@ class Member extends Model
         return $this->payments()
             ->max('year_paid');
     }
+
+    /**
+     * Update the member's status based on whether they have paid for the current year.
+     * - If they have a payment for the current year -> 'active'
+     * - Otherwise -> 'inactive'
+     */
+    public function updateStatusFromPayments(): void
+    {
+        $currentYear = (int) now()->year;
+        $this->status = $this->hasPaidForYear($currentYear) ? 'active' : 'inactive';
+        $this->save();
+    }
 }

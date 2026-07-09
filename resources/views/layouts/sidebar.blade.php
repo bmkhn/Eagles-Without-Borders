@@ -150,6 +150,36 @@
                         </a>
                     </li>
 
+                    {{-- Recycle Bin --}}
+                    <li class="mt-0.5">
+                        <a
+                            href="{{ route('admin.members.trashed') }}"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.members.trashed') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
+                            title="{{ __('Recycle Bin') }}"
+                            :class="sidebarCollapsed ? 'justify-center px-0' : ''"
+                        >
+                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span x-show="!sidebarCollapsed">{{ __('Recycle Bin') }}</span>
+                        </a>
+                    </li>
+
+                    {{-- Payments link (visible to all admin roles) --}}
+                    <li class="mt-0.5">
+                        <a
+                            href="{{ route('admin.payments.index') }}"
+                            class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200 transition {{ request()->routeIs('admin.payments.*') ? 'bg-gray-100 dark:bg-gray-800' : '' }}"
+                            title="{{ __('Payments') }}"
+                            :class="sidebarCollapsed ? 'justify-center px-0' : ''"
+                        >
+                            <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            <span x-show="!sidebarCollapsed">{{ __('Payments') }}</span>
+                        </a>
+                    </li>
+
                     <!-- Audit Logs (Super Admin & National Admin) -->
                     @if($isSuperAdmin || $isNationalAdmin)
                         <li class="mt-1">

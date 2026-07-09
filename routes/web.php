@@ -114,6 +114,19 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
             'destroy' => 'admin.members.destroy',
         ]);
 
+    // Trashed / Recycle Bin
+    Route::get('/members/trashed', [\App\Http\Controllers\Admin\MemberController::class, 'trashed'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members|delete-members'])
+        ->name('admin.members.trashed');
+
+    Route::patch('/members/{id}/restore', [\App\Http\Controllers\Admin\MemberController::class, 'restore'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:delete-members'])
+        ->name('admin.members.restore');
+
+    Route::delete('/members/{id}/force-delete', [\App\Http\Controllers\Admin\MemberController::class, 'forceDestroy'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:delete-members'])
+        ->name('admin.members.force-destroy');
+
     Route::get('/members/export', [\App\Http\Controllers\Admin\MemberController::class, 'export'])
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members'])
         ->name('admin.members.export');
@@ -123,9 +136,25 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
         ->name('admin.members.import');
 
     // Payments (scoped to member access)
+    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members'])
+        ->name('admin.payments.index');
+
+    Route::get('/payments/create', [\App\Http\Controllers\Admin\PaymentController::class, 'create'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.payments.create');
+
     Route::post('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'store'])
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
         ->name('admin.payments.store');
+
+    Route::get('/payments/{payment}/edit', [\App\Http\Controllers\Admin\PaymentController::class, 'edit'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.payments.edit');
+
+    Route::put('/payments/{payment}', [\App\Http\Controllers\Admin\PaymentController::class, 'update'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.payments.update');
 
     Route::delete('/payments/{payment}', [\App\Http\Controllers\Admin\PaymentController::class, 'destroy'])
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
