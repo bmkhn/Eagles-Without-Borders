@@ -821,21 +821,16 @@ class MemberController extends Controller
 
     public function destroy(Member $member): RedirectResponse
     {
-        // Soft-delete related records first
+        // Soft-delete related records (keep files on disk for potential restoration)
         foreach ($member->certificates as $cert) {
-            if ($cert->file) {
-                Storage::disk('public')->delete($cert->file);
-            }
-            $cert->delete(); // soft delete
+            $cert->delete(); // soft delete only, keep files
         }
 
         foreach ($member->payments as $payment) {
             $payment->delete(); // soft delete
         }
 
-        if ($member->profile_picture) {
-            Storage::disk('public')->delete($member->profile_picture);
-        }
+        // Keep profile picture on disk for potential restoration
 
         activity()
             ->performedOn($member)

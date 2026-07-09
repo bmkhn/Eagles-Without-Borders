@@ -362,17 +362,18 @@
                                                 {{ __('Edit') }}
                                             </a>
 
-                                            <form method="POST" action="{{ route('admin.members.destroy', $member) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button
-                                                    type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-900/50"
-                                                    onclick="return confirm('{{ __('Are you sure you want to delete this member?') }}')"
-                                                >
-                                                    {{ __('Delete') }}
-                                                </button>
-                                            </form>
+                                            <x-confirm-delete-modal
+                                                action="{{ route('admin.members.destroy', $member) }}"
+                                                method="DELETE"
+                                                title="{{ __('Move to Trash') }}"
+                                                message="{{ __('This member will be moved to the recycle bin. Their data can be restored later.') }}"
+                                                confirm-text="DELETE"
+                                                button-text="{{ __('Delete') }}"
+                                                button-class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50"
+                                                type="soft"
+                                            >
+                                                {{ __('Delete') }}
+                                            </x-confirm-delete-modal>
                                         </div>
                                     </td>
                                 </tr>

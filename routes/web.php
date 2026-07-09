@@ -148,6 +148,10 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
         ->name('admin.payments.store');
 
+    Route::get('/payments/{payment}', [\App\Http\Controllers\Admin\PaymentController::class, 'show'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members'])
+        ->name('admin.payments.show');
+
     Route::get('/payments/{payment}/edit', [\App\Http\Controllers\Admin\PaymentController::class, 'edit'])
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
         ->name('admin.payments.edit');

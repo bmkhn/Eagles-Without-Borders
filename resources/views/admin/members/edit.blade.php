@@ -449,36 +449,85 @@
                                             </button>
 
                                             {{-- Delete form --}}
-                                            <form
-                                                method="POST"
-                                                action="{{ route('admin.payments.destroy', $paymentForYear->id) }}"
-                                                onsubmit="return confirm('⚠️ DELETE PAYMENT RECORD for Year {{ $year }}?\\n\\nType OK to proceed to the second confirmation.')"
-                                                class="inline-flex"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <input type="hidden" name="confirm_delete" value="1">
-                                                <label class="inline-flex items-center gap-1 text-xs text-red-600 cursor-pointer" title="{{ __('Delete') }}">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="confirm_text"
-                                                        value="DELETE"
-                                                        required
-                                                        class="sr-only peer"
-                                                        onchange="this.closest('form').querySelector('button[type=submit]').disabled = !this.checked"
-                                                    >
-                                                    <svg class="size-3.5 peer-checked:text-red-700 dark:peer-checked:text-red-600 text-red-400 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div x-data="{ open: false, confirmInput: '' }">
+                                                <button
+                                                    type="button"
+                                                    @click="open = true"
+                                                    class="size-7 flex items-center justify-center rounded-md text-red-400 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
+                                                    title="{{ __('Delete') }}"
+                                                >
+                                                    <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                                     </svg>
-                                                </label>
-                                                <button
-                                                    type="submit"
-                                                    disabled
-                                                    class="text-[10px] font-semibold text-red-600 hover:text-red-800 transition disabled:opacity-30 disabled:cursor-not-allowed"
-                                                >
-                                                    {{ __('Delete') }}
                                                 </button>
-                                            </form>
+
+                                                {{-- Delete Confirmation Modal --}}
+                                                <template x-teleport="body">
+                                                    <div
+                                                        x-show="open"
+                                                        x-transition.opacity.duration.200ms
+                                                        class="fixed inset-0 z-50 flex items-center justify-center"
+                                                        @keydown.escape.window="open = false; confirmInput = ''"
+                                                    >
+                                                        <div class="absolute inset-0 bg-black/40" @click="open = false; confirmInput = ''"></div>
+                                                        <div class="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden" @click.stop>
+                                                            <div class="px-6 pt-5 pb-4">
+                                                                <div class="flex items-start gap-4">
+                                                                    <div class="shrink-0 size-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                                                        <svg class="size-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ __('Delete Payment Record') }}</h3>
+                                                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                                                            {{ __('This will delete the payment record for Year :year. The member\'s status will be re-evaluated after deletion.', ['year' => $year]) }}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="px-6 pb-2">
+                                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                                    {{ __('Type DELETE to confirm') }}
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    x-model="confirmInput"
+                                                                    @keydown.enter="if (confirmInput === 'DELETE') $el.closest('[x-data]').querySelector('form').submit()"
+                                                                    placeholder="DELETE"
+                                                                    class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
+                                                                    autocomplete="off"
+                                                                >
+                                                            </div>
+                                                            <form
+                                                                method="POST"
+                                                                action="{{ route('admin.payments.destroy', $paymentForYear->id) }}"
+                                                                class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700"
+                                                            >
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <input type="hidden" name="confirm_delete" value="1">
+                                                                <input type="hidden" name="confirm_text" x-bind:value="confirmInput">
+                                                                <button
+                                                                    type="button"
+                                                                    @click="open = false; confirmInput = ''"
+                                                                    class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                                                                >
+                                                                    {{ __('Cancel') }}
+                                                                </button>
+                                                                <button
+                                                                    type="submit"
+                                                                    :disabled="confirmInput !== 'DELETE'"
+                                                                    :class="confirmInput === 'DELETE' ? 'opacity-100' : 'opacity-50 cursor-not-allowed'"
+                                                                    class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition"
+                                                                >
+                                                                    {{ __('Delete') }}
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
                                     </div>
                                 @endif

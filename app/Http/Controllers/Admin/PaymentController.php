@@ -181,6 +181,18 @@ class PaymentController extends Controller
     }
 
     /**
+     * Display a single payment record.
+     */
+    public function show(Payment $payment): View
+    {
+        $payment->load(['member.club.region', 'member.position']);
+
+        return view('admin.payments.show', [
+            'payment' => $payment,
+        ]);
+    }
+
+    /**
      * Show the form to edit a payment record.
      */
     public function edit(Payment $payment): View
