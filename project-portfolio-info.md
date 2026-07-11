@@ -14,17 +14,7 @@
 **Eagles Without Borders — Membership Management System**
 
 ### Description
-Built a membership management web application for Eagles Without Borders, an international civic organization. The system manages a hierarchical organizational structure of regions, clubs, and members with role-based access control across four admin tiers.
-
-What I worked on:
-- Designed and implemented a **role-based access control (RBAC)** system with 4 admin roles and 17 granular permissions using Spatie Laravel Permission
-- Built a **payment-driven member status system** where members are automatically marked active/inactive based on yearly payment records, with an automated year-rollover scheduler
-- Developed **CSV import/export** functionality that handles member details, position assignments, and multi-year payment history in a single file
-- Implemented **soft-delete recycling** with restore and force-delete capabilities for members, certificates, and payment records
-- Created a **responsive admin dashboard** with role-scoped statistics, club membership visualizations, position distribution charts, and quick-action links
-- Built **public member profiles** with visibility rules — active members are publicly viewable, inactive members redirect to renewal page
-- Integrated **activity logging** tracking all create, update, delete, restore, and force-delete operations across the system
-- Added **dark mode support** with a collapsible sidebar and persistent user preferences
+Developed a web-based membership management platform for Eagles Without Borders, an international civic organization. The system centralizes member records and organizational data through a database-driven platform for managing members, clubs, regions, positions, and yearly membership payments. Contributed significantly to the development of the system, implementing core application features, database functionality, and administrative workflows including role-based access control, payment-driven member status, CSV import/export, and activity logging.
 
 ### Skills
 - **Frameworks:** Laravel 11, Tailwind CSS 3, Alpine.js 3
