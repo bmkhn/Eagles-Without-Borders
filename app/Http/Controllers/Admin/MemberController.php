@@ -359,7 +359,7 @@ class MemberController extends Controller
         $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
 
         $membersQuery = Member::query()
-            ->with(['club.region', 'position'])
+            ->with(['club.region', 'position', 'payments'])
             ->orderBy('last_name')->orderBy('first_name');
 
         // Role scoping
@@ -421,9 +421,12 @@ class MemberController extends Controller
         $callback = function () use ($members) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Club', 'Region', 'Position', 'Status']);
+            fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Club', 'Region', 'Position', 'Status', 'Paid Years']);
 
             foreach ($members as $member) {
+                $paidEntries = $member->payments->sortBy('year_paid')->map(function ($p) {
+                    return $p->year_paid . ':' . $p->date_paid->format('Y-m-d');
+                })->implode(', ');
                 fputcsv($handle, [
                     $member->first_name,
                     $member->middle_initial,
@@ -434,6 +437,7 @@ class MemberController extends Controller
                     $member->club?->region?->name ?? '',
                     $member->position?->name ?? '',
                     $member->status,
+                    $paidEntries,
                 ]);
             }
 
@@ -485,7 +489,7 @@ class MemberController extends Controller
         // Normalize headers
         $header = array_map(fn ($h) => trim(mb_strtolower(str_replace(['-', ' '], '_', $h))), $header);
 
-        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'contact_number', 'club', 'region', 'position', 'status'];
+        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'contact_number', 'club', 'region', 'position', 'status', 'paid_years'];
         // Also accept 'middle_initial' instead of 'm.i.'
         $normalizedHeaders = array_map(function ($h) {
             return $h === 'middle_initial' ? 'm.i.' : $h;
@@ -497,7 +501,7 @@ class MemberController extends Controller
             return redirect()
                 ->route('admin.members.index')
                 ->with('error', 'CSV is missing required columns: ' . implode(', ', $missing) .
-                    '. Expected: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.');
+                    '. Expected: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status, Paid Years.');
         }
 
         // Build column index map
@@ -590,65 +594,111 @@ class MemberController extends Controller
                 continue;
             }
 
-            // ── Resolve club from CSV ──────────────────────────────
-            if (empty($clubName)) {
-                $errors[] = "Row {$rowNumber}: Club is required.";
-                continue;
-            }
-
-            $resolvedClub = Club::where('name', $clubName)->first();
-            if (!$resolvedClub) {
-                $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found.";
-                continue;
-            }
-
-            // Verify region matches if provided (Super/National Admin)
-            if (!empty($regionName) && ($isSuperAdmin || $isNationalAdmin)) {
-                $resolvedRegion = Region::where('name', $regionName)->first();
-                if (!$resolvedRegion) {
-                    $errors[] = "Row {$rowNumber}: Region '{$regionName}' not found.";
-                    continue;
-                }
-                if ((int) $resolvedClub->region_id !== (int) $resolvedRegion->id) {
-                    $errors[] = "Row {$rowNumber}: Club '{$clubName}' is not in Region '{$regionName}'.";
-                    continue;
-                }
-            }
-
-            // Normalize status
-            $statusNormalized = in_array(mb_strtolower($status), ['active', 'inactive']) ? mb_strtolower($status) : 'active';
-
-            // Find position by name
+            // ── Resolve position FIRST (needed for National President club check) ──
             $position = Position::where('name', $positionName)->first();
             if (!$position) {
                 $errors[] = "Row {$rowNumber}: Position '{$positionName}' not found. Skipping.";
                 continue;
             }
 
-            // Check for National President restriction
-            if ($nationalPresidentPosition && (int) $position->id === (int) $nationalPresidentPosition->id) {
+            $isNationalPresident = $nationalPresidentPosition && (int) $position->id === (int) $nationalPresidentPosition->id;
+
+            // ── National President: no club, skip club requirement ──
+            if ($isNationalPresident) {
                 if ($isClubAdmin || $isRegionalAdmin) {
                     $errors[] = "Row {$rowNumber}: Cannot import a member with 'National President' position.";
                     continue;
                 }
+                // Super Admin / National Admin can create National President without a club
+                $resolvedClub = null;
+            } else {
+                // ── Resolve club from CSV ──────────────────────────────
+                if (empty($clubName)) {
+                    $errors[] = "Row {$rowNumber}: Club is required.";
+                    continue;
+                }
+
+                $resolvedClub = Club::where('name', $clubName)->first();
+                if (!$resolvedClub) {
+                    $errors[] = "Row {$rowNumber}: Club '{$clubName}' not found.";
+                    continue;
+                }
+
+                // Verify region matches if provided (Super/National Admin)
+                if (!empty($regionName) && ($isSuperAdmin || $isNationalAdmin)) {
+                    $resolvedRegion = Region::where('name', $regionName)->first();
+                    if (!$resolvedRegion) {
+                        $errors[] = "Row {$rowNumber}: Region '{$regionName}' not found.";
+                        continue;
+                    }
+                    if ((int) $resolvedClub->region_id !== (int) $resolvedRegion->id) {
+                        $errors[] = "Row {$rowNumber}: Club '{$clubName}' is not in Region '{$regionName}'.";
+                        continue;
+                    }
+                }
             }
 
-            // Check for exact duplicate (same first_name + last_name + contact_number in the same club)
-            $duplicate = Member::query()
-                ->where('club_id', $resolvedClub->id)
-                ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
-                ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
-                ->where('contact_number', $contactNumber)
-                ->first();
+            // ── Parse paid years (format: "2024:2024-01-15, 2025:2025-03-01" or just "2024") ──
+            $paidYearsRaw = $row[$colMap['paid_years']] ?? '';
+            $paidEntries = [];
+            if (!empty(trim($paidYearsRaw))) {
+                $parts = explode(',', $paidYearsRaw);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if (empty($part)) continue;
 
-            if ($duplicate) {
-                $skipped++;
-                continue;
+                    if (str_contains($part, ':')) {
+                        [$yearStr, $dateStr] = explode(':', $part, 2);
+                        $yearStr = trim($yearStr);
+                        $dateStr = trim($dateStr);
+                        if (is_numeric($yearStr) && (int) $yearStr >= 2000 && (int) $yearStr <= 2099) {
+                            $date = \Carbon\Carbon::canBeCreatedFromFormat($dateStr, 'Y-m-d') ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateStr) : null;
+                            $paidEntries[] = [
+                                'year' => (int) $yearStr,
+                                'date' => $date ? $date->format('Y-m-d') : now()->format('Y-m-d'),
+                            ];
+                        }
+                    } else {
+                        $year = trim($part);
+                        if (is_numeric($year) && (int) $year >= 2000 && (int) $year <= 2099) {
+                            $paidEntries[] = [
+                                'year' => (int) $year,
+                                'date' => now()->format('Y-m-d'),
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // ── Check for existing member ──
+            if ($isNationalPresident) {
+                // Only one National President allowed (unique by position, no club)
+                $existingNP = Member::query()
+                    ->where('position_id', $position->id)
+                    ->whereNull('club_id')
+                    ->first();
+
+                if ($existingNP) {
+                    $skipped++;
+                    continue;
+                }
+            } else {
+                // Check for exact duplicate (same first_name + last_name + contact_number in the same club)
+                $duplicate = Member::query()
+                    ->where('club_id', $resolvedClub->id)
+                    ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
+                    ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
+                    ->where('contact_number', $contactNumber)
+                    ->first();
+
+                if ($duplicate) {
+                    $skipped++;
+                    continue;
+                }
             }
 
             // Create member (always starts as inactive; status is auto-managed by payments)
-            $member = new Member([
-                'club_id' => $resolvedClub->id,
+            $memberData = [
                 'position_id' => $position->id,
                 'first_name' => $firstName,
                 'middle_initial' => $middleInitial ?: null,
@@ -656,7 +706,15 @@ class MemberController extends Controller
                 'suffix' => $suffix ?: null,
                 'contact_number' => $contactNumber,
                 'status' => 'inactive',
-            ]);
+            ];
+
+            if ($isNationalPresident) {
+                $memberData['club_id'] = null;
+            } else {
+                $memberData['club_id'] = $resolvedClub->id;
+            }
+
+            $member = new Member($memberData);
             $member->applySlugFromName();
 
             try {
@@ -664,6 +722,19 @@ class MemberController extends Controller
             } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
                 $skipped++;
                 continue;
+            }
+
+            // ── Create payment records for paid years ──────────────────
+            if (!empty($paidEntries)) {
+                $existingYears = $member->payments()->pluck('year_paid')->all();
+                foreach ($paidEntries as $entry) {
+                    if (!in_array($entry['year'], $existingYears)) {
+                        $member->payments()->create([
+                            'year_paid' => $entry['year'],
+                            'date_paid' => $entry['date'],
+                        ]);
+                    }
+                }
             }
 
             $imported++;

@@ -236,8 +236,9 @@
                             {{ __('Import Members from CSV') }}
                         </h4>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                            {{ __('CSV must match the export format: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status.') }}
+                            {{ __('CSV must match the export format: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status, Paid Years.') }}
                             {{ __('Clubs are resolved from the CSV. Duplicates (same name + contact number) will be skipped.') }}
+                            {{ __('The "Paid Years" column accepts comma-separated "year:date" entries (e.g. "2024:2024-01-15, 2025:2025-03-01" or just "2024" to use today\'s date).') }}
                         </p>
 
                         <form method="POST" action="{{ route('admin.members.import') }}" enctype="multipart/form-data">
