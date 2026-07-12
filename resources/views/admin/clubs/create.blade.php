@@ -20,7 +20,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.clubs.store') }}">
+                <form method="POST" action="{{ route('admin.clubs.store') }}" x-data="{ submitting: false }" @submit="submitting = true">
                     @csrf
 
                     <div class="space-y-6" x-data="{
@@ -40,7 +40,7 @@
                                         id="region_id"
                                         name="region_id"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="">{{ __('Select region') }}</option>
                                         @foreach($regions as $region)
@@ -62,7 +62,7 @@
                                         type="text"
                                         value="{{ old('name') }}"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     @error('name')
                                         <x-input-error class="mt-1" :messages="[$message]" />
@@ -84,7 +84,7 @@
                                         type="text"
                                         value="{{ old('cp_name') }}"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     @error('cp_name')
                                         <x-input-error class="mt-1" :messages="[$message]" />
@@ -99,7 +99,7 @@
                                         type="email"
                                         value="{{ old('cp_email') }}"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     @error('cp_email')
                                         <x-input-error class="mt-1" :messages="[$message]" />
@@ -114,7 +114,7 @@
                                         type="password"
                                         x-model="password"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     @error('cp_password')
                                         <x-input-error class="mt-1" :messages="[$message]" />
@@ -129,7 +129,7 @@
                                         type="password"
                                         x-model="confirmPassword"
                                         required
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
                                     <template x-if="confirmPassword !== '' && !passwordsMatch">
                                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ __('Passwords do not match.') }}</p>
@@ -141,13 +141,20 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                :disabled="!passwordsMatch"
-                                :class="passwordsMatch
-                                    ? 'inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
-                                    : 'inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                :disabled="!passwordsMatch || submitting"
+                                :class="!passwordsMatch || submitting
+                                    ? 'inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                    : 'inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
                                 "
                             >
-                                {{ __('Save') }}
+                                <span x-show="!submitting">{{ __('Save') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
                             </button>
 
                             <a

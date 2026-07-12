@@ -109,6 +109,7 @@
                                                 :action="route('admin.positions.destroy', $position)"
                                                 confirmText="DELETE"
                                                 buttonText="{{ __('Delete') }}"
+                                                button-class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50"
                                                 type="soft"
                                             >
                                                 <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

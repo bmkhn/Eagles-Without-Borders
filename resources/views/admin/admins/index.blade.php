@@ -1,35 +1,30 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
-            {{ __('Admin Accounts') }}
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
+                {{ __('Admin Accounts') }}
+            </h2>
+            <a
+                href="{{ route('admin.admins.create') }}"
+                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+                {{ __('Create Admin') }}
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if(session('success'))
-                <div class="mb-4">
-                    <x-alert type="success">{{ session('success') }}</x-alert>
-                </div>
+                <x-alert type="success" auto-dismiss>{{ session('success') }}</x-alert>
             @endif
 
             @if(session('error'))
-                <div class="mb-4">
-                    <x-alert type="danger">{{ session('error') }}</x-alert>
-                </div>
+                <x-alert type="danger">{{ session('error') }}</x-alert>
             @endif
 
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ __('Manage Admins') }}</h3>
-                        <a href="{{ route('admin.admins.create') }}" class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 transition">
-                            <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            {{ __('Create Admin') }}
-                        </a>
-                    </div>
+            <div class="mt-6">
+                <x-card title="Search & Manage">
 
                     <!-- Search & Filter -->
                     <form method="GET" action="{{ route('admin.admins.index') }}" class="mb-4">
@@ -138,7 +133,7 @@
                     <div class="mt-4">
                         {{ $admins->links() }}
                     </div>
-                </div>
+                </x-card>
             </div>
         </div>
     </div>

@@ -28,10 +28,11 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.payments.store') }}" x-data="{
+                <form method="POST" action="{{ route('admin.payments.store') }}" @submit="submitting = true" x-data="{
+                        submitting: false,
                     memberId: '{{ old('member_id') }}',
                     yearPaid: '{{ old('year_paid', $currentYear) }}',
-                    existingPayments: @json($existingPayments),
+                    existingPayments: @js($existingPayments),
                     get isYearAlreadyPaid() {
                         if (!this.memberId || !this.yearPaid) return false;
                         const years = this.existingPayments[this.memberId];
@@ -48,7 +49,7 @@
                                 name="member_id"
                                 required
                                 x-model="memberId"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">{{ __('Select a member...') }}</option>
                                 @foreach($members as $member)
@@ -74,7 +75,7 @@
                                     min="2000"
                                     max="2099"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 @error('year_paid')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -89,7 +90,7 @@
                                     type="date"
                                     value="{{ old('date_paid', now()->format('Y-m-d')) }}"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 @error('date_paid')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -114,13 +115,20 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                :disabled="isYearAlreadyPaid"
-                                :class="isYearAlreadyPaid
+                                :disabled="isYearAlreadyPaid || submitting"
+                                :class="isYearAlreadyPaid || submitting
                                     ? 'inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed'
                                     : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
                                 "
                             >
-                                {{ __('Save Payment') }}
+                                <span x-show="!submitting">{{ __('Save Payment') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
                             </button>
 
                             <a

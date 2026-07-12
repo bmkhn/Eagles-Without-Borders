@@ -51,7 +51,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.payments.update', $payment) }}">
+                <form method="POST" action="{{ route('admin.payments.update', $payment) }}" x-data="{ submitting: false }" @submit="submitting = true">
                     @csrf
                     @method('PUT')
 
@@ -66,7 +66,7 @@
                                 min="2000"
                                 max="2099"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             @error('year_paid')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -81,7 +81,7 @@
                                 type="date"
                                 value="{{ old('date_paid', $payment->date_paid instanceof \Carbon\Carbon ? $payment->date_paid->format('Y-m-d') : \Carbon\Carbon::parse($payment->date_paid)->format('Y-m-d')) }}"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             @error('date_paid')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -91,9 +91,17 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
+                                :disabled="submitting"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                {{ __('Update Payment') }}
+                                <span x-show="!submitting">{{ __('Update Payment') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
                             </button>
 
                             <a

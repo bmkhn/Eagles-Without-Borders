@@ -13,10 +13,10 @@
 >
     <div class="flex h-full flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <!-- Branding -->
-        <div class="flex items-center gap-2 px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-            <img src="{{ asset('images/logo.png') }}" alt="" class="h-7 w-auto" :class="sidebarCollapsed ? 'mx-auto' : ''">
+        <a href="/" class="flex items-center gap-2 px-4 py-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <img src="{{ asset('images/logo.png') }}" alt="{{ config('app.name') }}" class="h-7 w-auto" :class="sidebarCollapsed ? 'mx-auto' : ''">
             <span x-show="!sidebarCollapsed" class="text-gray-500 dark:text-gray-400 text-xs font-medium">Admin</span>
-        </div>
+        </a>
 
         <!-- Nav -->
         <nav class="px-3 pt-3 overflow-y-auto">

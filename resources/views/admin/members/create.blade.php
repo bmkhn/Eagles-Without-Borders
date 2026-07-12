@@ -20,14 +20,14 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.members.store') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('admin.members.store') }}" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true">
                     @csrf
 
-                    <div class="space-y-2">
+                    <div class="space-y-4">
                         <div>
                             <x-input-label for="club_id" :value="__('Club')" />
                             @if($clubs->count() === 1)
-                                <p class="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
                                     {{ $clubs->first()->name }}
                                 </p>
                                 <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}">
@@ -36,7 +36,7 @@
                                     id="club_id"
                                     name="club_id"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="">{{ __('Select club') }}</option>
                                     @foreach($clubs as $club)
@@ -52,12 +52,12 @@
                         </div>
 
                         <div>
-                            <x-input-label for="position_id" :value="__('Position')" />
+                            <x-input-label for="position_id" :value="__('Position')" class="mt-1.5" />
                             <select
                                 id="position_id"
                                 name="position_id"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">{{ __('Select position') }}</option>
                                 @foreach($positions as $position)
@@ -73,14 +73,14 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <div class="sm:col-span-2">
-                                <x-input-label for="first_name" :value="__('First Name')" />
+                                <x-input-label for="first_name" :value="__('First Name')" class="mt-1.5" />
                                 <input
                                     id="first_name"
                                     name="first_name"
                                     type="text"
                                     value="{{ old('first_name') }}"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 @error('first_name')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -88,14 +88,14 @@
                             </div>
 
                             <div>
-                                <x-input-label for="middle_initial" :value="__('M.I.')" />
+                                <x-input-label for="middle_initial" :value="__('M.I.')" class="mt-1.5" />
                                 <input
                                     id="middle_initial"
                                     name="middle_initial"
                                     type="text"
                                     value="{{ old('middle_initial') }}"
                                     maxlength="10"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('(opt)') }}"
                                 />
                                 @error('middle_initial')
@@ -104,14 +104,14 @@
                             </div>
 
                             <div>
-                                <x-input-label for="suffix" :value="__('Suffix')" />
+                                <x-input-label for="suffix" :value="__('Suffix')" class="mt-1.5" />
                                 <input
                                     id="suffix"
                                     name="suffix"
                                     type="text"
                                     value="{{ old('suffix') }}"
                                     maxlength="50"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('Jr., III, etc.') }}"
                                 />
                                 @error('suffix')
@@ -121,14 +121,14 @@
                         </div>
 
                         <div>
-                            <x-input-label for="last_name" :value="__('Last Name')" />
+                            <x-input-label for="last_name" :value="__('Last Name')" class="mt-1.5" />
                             <input
                                 id="last_name"
                                 name="last_name"
                                 type="text"
                                 value="{{ old('last_name') }}"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             @error('last_name')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -136,14 +136,14 @@
                         </div>
 
                         <div>
-                            <x-input-label for="contact_number" :value="__('Contact Number')" />
+                            <x-input-label for="contact_number" :value="__('Contact Number')" class="mt-1.5" />
                             <input
                                 id="contact_number"
                                 name="contact_number"
                                 type="text"
                                 value="{{ old('contact_number') }}"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             @error('contact_number')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -151,13 +151,13 @@
                         </div>
 
                         <div>
-                            <x-input-label for="profile_picture" :value="__('Profile Picture')" />
+                            <x-input-label for="profile_picture" :value="__('Profile Picture')" class="mt-1.5" />
                             <input
                                 id="profile_picture"
                                 name="profile_picture"
                                 type="file"
                                 accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                             />
                             <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
                             @error('profile_picture')
@@ -168,6 +168,7 @@
                         {{-- Certificates Section --}}
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6"
                              x-data="{
+                                submitting: false,
                                 certificates: [],
                                 addCertificate() {
                                     this.certificates.push({ name: '', file: null, issued_at: '' });
@@ -216,7 +217,7 @@
                                                 :name="'certificates[' + index + '][name]'"
                                                 type="text"
                                                 x-model="cert.name"
-                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                                 placeholder="{{ __('e.g. Leadership Award') }}"
                                             />
                                         </div>
@@ -228,7 +229,7 @@
                                                 :name="'certificates[' + index + '][issued_at]'"
                                                 type="date"
                                                 x-model="cert.issued_at"
-                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                             />
                                         </div>
 
@@ -239,7 +240,7 @@
                                                 :name="'certificates[' + index + '][file]'"
                                                 type="file"
                                                 accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                                class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                                class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                             />
                                             <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
                                             @error('certificates.*.file')
@@ -258,9 +259,17 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
+                                :disabled="submitting"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                {{ __('Save') }}
+                                <span x-show="!submitting">{{ __('Save') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
                             </button>
 
                             <a

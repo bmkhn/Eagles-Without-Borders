@@ -20,11 +20,11 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.members.update', $member) }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('admin.members.update', $member) }}" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true">
                     @csrf
                     @method('PUT')
 
-                    <div class="space-y-2">
+                    <div class="space-y-4">
                         <div>
                             <x-input-label for="club_id" :value="__('Club')" />
                             @if($clubs->count() === 1)
@@ -37,7 +37,7 @@
                                     id="club_id"
                                     name="club_id"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="">{{ __('Select club') }}</option>
                                     @foreach($clubs as $club)
@@ -58,7 +58,7 @@
                                 id="position_id"
                                 name="position_id"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">{{ __('Select position') }}</option>
                                 @foreach($positions as $position)
@@ -81,7 +81,7 @@
                                     type="text"
                                     value="{{ old('first_name', $member->first_name) }}"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 @error('first_name')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -96,7 +96,7 @@
                                     type="text"
                                     value="{{ old('middle_initial', $member->middle_initial) }}"
                                     maxlength="10"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('(opt)') }}"
                                 />
                                 @error('middle_initial')
@@ -112,7 +112,7 @@
                                     type="text"
                                     value="{{ old('suffix', $member->suffix) }}"
                                     maxlength="50"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('Jr., III, etc.') }}"
                                 />
                                 @error('suffix')
@@ -130,7 +130,7 @@
                                     type="text"
                                     value="{{ old('last_name', $member->last_name) }}"
                                     required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
                                 @error('last_name')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -168,7 +168,7 @@
                                 type="text"
                                 value="{{ old('contact_number', $member->contact_number) }}"
                                 required
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
                             @error('contact_number')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -202,7 +202,7 @@
                                 name="profile_picture"
                                 type="file"
                                 accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                             />
                             <p class="mt-1 text-xs text-gray-500">{{ __('Optional. Leave empty to keep current. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
                             @error('profile_picture')
@@ -217,11 +217,31 @@
                                 addCertificate() {
                                     this.certificates.push({ id: null, name: '', file: null, issued_at: '', has_file: false, file_url: null });
                                 },
-                                removeCertificate(index) {
-                                    if (this.certificates[index].id) {
-                                        if (!confirm('{{ __('Remove this certificate?') }}')) return;
+                                removingIndex: null,
+                                removingName: '',
+                                confirmDeleteInput: '',
+                                confirmDelete() {
+                                    if (this.confirmDeleteInput === 'DELETE') {
+                                        this.certificates.splice(this.removingIndex, 1);
                                     }
-                                    this.certificates.splice(index, 1);
+                                    this.confirmDeleteInput = '';
+                                    this.removingIndex = null;
+                                    this.removingName = '';
+                                },
+                                cancelDelete() {
+                                    this.confirmDeleteInput = '';
+                                    this.removingIndex = null;
+                                    this.removingName = '';
+                                },
+                                promptDelete(index) {
+                                    // Unsaved certs (no id) — remove silently, no modal needed
+                                    if (!this.certificates[index].id) {
+                                        this.certificates.splice(index, 1);
+                                        return;
+                                    }
+                                    this.removingIndex = index;
+                                    this.removingName = this.certificates[index].name || 'Certificate #' + (index + 1);
+                                    this.confirmDeleteInput = '';
                                 }
                              }">
                             <input type="hidden" name="certificates_managed" value="1">
@@ -248,8 +268,9 @@
                                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="'Certificate #' + (index + 1)"></span>
                                         <button
                                             type="button"
-                                            @click="removeCertificate(index)"
+                                            @click="promptDelete(index)"
                                             class="text-red-500 hover:text-red-700 transition"
+                                            title="{{ __('Remove certificate') }}"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -275,7 +296,7 @@
                                                 :name="'certificates[' + index + '][name]'"
                                                 type="text"
                                                 x-model="cert.name"
-                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                                 placeholder="{{ __('e.g. Leadership Award') }}"
                                             />
                                         </div>
@@ -287,7 +308,7 @@
                                                 :name="'certificates[' + index + '][issued_at]'"
                                                 type="date"
                                                 x-model="cert.issued_at"
-                                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                             />
                                         </div>
 
@@ -298,7 +319,7 @@
                                                 :name="'certificates[' + index + '][file]'"
                                                 type="file"
                                                 accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                                class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                                class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                             />
                                             <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB. Leave empty to keep current.') }}</p>
                                             @error('certificates.*.file')
@@ -312,6 +333,68 @@
                                 </div>
                             </template>
 
+                            {{-- Certificate Delete Confirmation Modal --}}
+                            <template x-teleport="body">
+                                <div
+                                    x-show="removingIndex !== null"
+                                    x-transition.opacity.duration.200ms
+                                    class="fixed inset-0 z-50 flex items-center justify-center"
+                                    @keydown.escape.window="cancelDelete()"
+                                >
+                                    <div class="absolute inset-0 bg-black/40" @click="cancelDelete()"></div>
+                                    <div class="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden" @click.stop>
+                                        <div class="px-6 pt-5 pb-4">
+                                            <div class="flex items-start gap-4">
+                                                <div class="shrink-0 size-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                                    <svg class="size-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ __('Remove Certificate') }}</h3>
+                                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                                        {{ __('Remove the certificate') }}
+                                                        "<span x-text="removingName" class="font-semibold"></span>"
+                                                        {{ __('from this member. Any uploaded file will be permanently deleted.') }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="px-6 pb-2">
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                {{ __('Type DELETE to confirm') }}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                x-model="confirmDeleteInput"
+                                                @keydown.enter="confirmDelete()"
+                                                placeholder="DELETE"
+                                                class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
+                                                autocomplete="off"
+                                            >
+                                        </div>
+                                        <div class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
+                                            <button
+                                                type="button"
+                                                @click="cancelDelete()"
+                                                class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                                            >
+                                                {{ __('Cancel') }}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="confirmDelete()"
+                                                :disabled="confirmDeleteInput !== 'DELETE'"
+                                                :class="confirmDeleteInput === 'DELETE' ? 'opacity-100' : 'opacity-50 cursor-not-allowed'"
+                                                class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition"
+                                            >
+                                                {{ __('Remove') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
                             <p x-show="certificates.length === 0" class="text-sm text-gray-400 dark:text-gray-500 text-center py-4 italic">
                                 {{ __('No certificates added yet. Click "Add Certificate" above.') }}
                             </p>
@@ -320,9 +403,17 @@
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
+                                :disabled="submitting"
                                 class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
-                                {{ __('Update') }}
+                                <span x-show="!submitting">{{ __('Update') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
                             </button>
 
                             <a
