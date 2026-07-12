@@ -146,12 +146,13 @@
                         </div>
 
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                            <x-input-label for="password" :value="__('New Password (leave blank to keep current)')" />
+                            <x-input-label for="password" :value="__('New Password')" />
                             <input
                                 id="password"
                                 name="password"
                                 type="password"
                                 class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                placeholder="{{ __('Leave blank to keep current') }}"
                             />
                             @error('password')
                                 <x-input-error class="mt-1" :messages="[$message]" />
@@ -164,7 +165,8 @@
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 type="password"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:indigo-500"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                placeholder="{{ __('Leave blank to keep current') }}"
                             />
                         </div>
 

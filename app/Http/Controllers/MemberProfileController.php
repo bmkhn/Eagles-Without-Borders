@@ -20,7 +20,11 @@ class MemberProfileController extends Controller
         $member = Member::query()
             ->with(['position', 'club.region', 'certificates'])
             ->where('slug', $slug)
-            ->firstOrFail();
+            ->first();
+
+        if (! $member) {
+            return view('public.member-not-found');
+        }
 
         // If member is active, show the profile
         if ($member->status === 'active') {
