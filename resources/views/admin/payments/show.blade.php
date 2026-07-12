@@ -30,12 +30,13 @@
     <div class="py-8">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
-                <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+                <x-alert type="success">{{ session('success') }}</x-alert>
             @endif
             @if (session('error'))
-                <x-alert type="danger" class="mb-4">{{ session('error') }}</x-alert>
+                <x-alert type="danger">{{ session('error') }}</x-alert>
             @endif
 
+            <div class="mt-6">
             <x-card title="Payment Record">
                 <div class="space-y-6">
                     {{-- Member Info --}}
@@ -170,6 +171,7 @@
                     </div>
                 </div>
             </x-card>
+            </div>
         </div>
     </div>
 </x-app-layout>

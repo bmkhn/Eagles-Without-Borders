@@ -16,12 +16,13 @@
     <div class="py-8">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
-                <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+                <x-alert type="success">{{ session('success') }}</x-alert>
             @endif
             @if (session('error'))
-                <x-alert type="danger" class="mb-4">{{ session('error') }}</x-alert>
+                <x-alert type="danger">{{ session('error') }}</x-alert>
             @endif
 
+            <div class="mt-6">
             <x-card title="Edit Payment Record">
                 <div class="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                     <p class="text-sm text-gray-700 dark:text-gray-300">
@@ -105,6 +106,7 @@
                     </div>
                 </form>
             </x-card>
+            </div>
         </div>
     </div>
 </x-app-layout>

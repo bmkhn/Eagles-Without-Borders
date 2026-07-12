@@ -8,12 +8,13 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
-                <x-alert type="success" class="mb-4">{{ session('success') }}</x-alert>
+                <x-alert type="success">{{ session('success') }}</x-alert>
             @endif
             @if (session('error'))
-                <x-alert type="danger" class="mb-4">{{ session('error') }}</x-alert>
+                <x-alert type="danger">{{ session('error') }}</x-alert>
             @endif
 
+            <div class="mt-6">
             <x-card title="New Payment Record">
                 @if ($errors->any())
                     <div class="mb-4">
@@ -27,7 +28,16 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.payments.store') }}">
+                <form method="POST" action="{{ route('admin.payments.store') }}" x-data="{
+                    memberId: '{{ old('member_id') }}',
+                    yearPaid: '{{ old('year_paid', $currentYear) }}',
+                    existingPayments: @json($existingPayments),
+                    get isYearAlreadyPaid() {
+                        if (!this.memberId || !this.yearPaid) return false;
+                        const years = this.existingPayments[this.memberId];
+                        return years && years.includes(parseInt(this.yearPaid));
+                    }
+                }">
                     @csrf
 
                     <div class="space-y-4">
@@ -37,6 +47,7 @@
                                 id="member_id"
                                 name="member_id"
                                 required
+                                x-model="memberId"
                                 class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">{{ __('Select a member...') }}</option>
@@ -58,6 +69,7 @@
                                     id="year_paid"
                                     name="year_paid"
                                     type="number"
+                                    x-model="yearPaid"
                                     value="{{ old('year_paid', $currentYear) }}"
                                     min="2000"
                                     max="2099"
@@ -85,10 +97,28 @@
                             </div>
                         </div>
 
+                        <!-- Duplicate warning message -->
+                        <template x-if="isYearAlreadyPaid">
+                            <div class="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 px-4 py-3">
+                                <div class="flex items-start gap-2.5">
+                                    <svg class="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                    </svg>
+                                    <p class="text-sm text-amber-800 dark:text-amber-300">
+                                        {{ __('This member already has a payment recorded for Year') }} <strong x-text="yearPaid"></strong>.
+                                    </p>
+                                </div>
+                            </div>
+                        </template>
+
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                :disabled="isYearAlreadyPaid"
+                                :class="isYearAlreadyPaid
+                                    ? 'inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 border border-transparent rounded-md font-semibold text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                    : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
+                                "
                             >
                                 {{ __('Save Payment') }}
                             </button>
@@ -103,6 +133,7 @@
                     </div>
                 </form>
             </x-card>
+            </div>
         </div>
     </div>
 </x-app-layout>

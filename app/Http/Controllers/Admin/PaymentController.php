@@ -97,15 +97,27 @@ class PaymentController extends Controller
 
         $members = $membersQuery->get();
 
+        // Get all existing payments for these members to detect duplicates client-side
+        // Keyed by member_id => array of paid years
+        $existingPayments = Payment::whereIn('member_id', $members->pluck('id'))
+            ->select('member_id', 'year_paid')
+            ->get()
+            ->groupBy('member_id')
+            ->map(fn ($payments) => $payments->pluck('year_paid')->toArray());
+
         return view('admin.payments.create', [
             'members' => $members,
             'currentYear' => (int) now()->year,
+            'existingPayments' => $existingPayments,
         ]);
     }
 
     /**
      * Store a new payment (record a member as paid for a year).
      * Auto-updates the member's status based on the current year.
+     *
+     * If a payment for this member+year was previously soft-deleted, it will
+     * be restored instead of creating a duplicate.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -119,18 +131,6 @@ class PaymentController extends Controller
             ],
             'date_paid' => ['nullable', 'date'],
         ]);
-
-        // Check uniqueness manually to provide a friendly error
-        $exists = Payment::where('member_id', $validated['member_id'])
-            ->where('year_paid', $validated['year_paid'])
-            ->exists();
-
-        if ($exists) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'This member already has a payment recorded for Year ' . $validated['year_paid'] . '.');
-        }
 
         $member = Member::with('club')->findOrFail($validated['member_id']);
 
@@ -146,6 +146,56 @@ class PaymentController extends Controller
             }
         }
 
+        // Check for an active (non-deleted) duplicate first
+        $existingPayment = Payment::where('member_id', $validated['member_id'])
+            ->where('year_paid', $validated['year_paid'])
+            ->first();
+
+        if ($existingPayment) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'This member already has a payment recorded for Year ' . $validated['year_paid'] . '.');
+        }
+
+        // Check for a soft-deleted payment — restore it instead of creating a new one
+        $trashedPayment = Payment::onlyTrashed()
+            ->where('member_id', $validated['member_id'])
+            ->where('year_paid', $validated['year_paid'])
+            ->first();
+
+        if ($trashedPayment) {
+            $trashedPayment->restore();
+            $trashedPayment->update([
+                'date_paid' => $validated['date_paid'] ?? now(),
+            ]);
+            $trashedPayment->refresh();
+
+            $member->updateStatusFromPayments();
+
+            activity('payment')
+                ->performedOn($trashedPayment)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'member_id' => $member->id,
+                    'member_name' => $member->name,
+                    'year_paid' => $validated['year_paid'],
+                    'date_paid' => $trashedPayment->date_paid->format('Y-m-d'),
+                    'action' => 'restored_payment',
+                ])
+                ->log('payment_restored');
+
+            if ($request->has('_redirect')) {
+                $redirectTo = $request->input('_redirect');
+            } else {
+                $redirectTo = route('admin.payments.index');
+            }
+
+            return redirect($redirectTo)
+                ->with('success', "Payment restored for {$member->name} — Year {$validated['year_paid']}.");
+        }
+
+        // No existing or trashed payment — create a brand new one
         $payment = Payment::create([
             'member_id' => $member->id,
             'year_paid' => $validated['year_paid'],
@@ -207,6 +257,9 @@ class PaymentController extends Controller
     /**
      * Update a payment record (year_paid and/or date_paid).
      * Re-evaluates the member's status after the update.
+     *
+     * Includes soft-deleted records in the uniqueness check to prevent
+     * conflicts with payments that were previously deleted.
      */
     public function update(Request $request, Payment $payment): RedirectResponse
     {
@@ -220,8 +273,9 @@ class PaymentController extends Controller
             'date_paid' => ['nullable', 'date'],
         ]);
 
-        // Check uniqueness excluding this payment
-        $exists = Payment::where('member_id', $payment->member_id)
+        // Check uniqueness including soft-deleted records (excluding this payment)
+        $exists = Payment::withTrashed()
+            ->where('member_id', $payment->member_id)
             ->where('year_paid', $validated['year_paid'])
             ->where('id', '!=', $payment->id)
             ->exists();
