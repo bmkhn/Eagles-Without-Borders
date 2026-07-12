@@ -25,7 +25,7 @@
             <div class="mt-6">
             <x-card title="All Payments">
                 {{-- Filters --}}
-                <form method="GET" action="{{ route('admin.payments.index') }}" class="mb-4 flex items-end gap-3 flex-wrap">
+                <form method="GET" action="{{ route('admin.payments.index') }}" class="mb-4 flex items-end gap-3 flex-wrap" x-data="{ submitting: false }" @submit="submitting = true">
                     <div>
                         <x-input-label for="q" :value="__('Search Member')" />
                         <input
@@ -72,9 +72,15 @@
 
                     <button
                         type="submit"
-                        class="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-500 transition"
+                        x-bind:disabled="submitting"
+                        class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-500 transition disabled:opacity-70 disabled:cursor-wait"
                     >
-                        {{ __('Filter') }}
+                        <span x-show="!submitting">{{ __('Filter') }}</span>
+                        <svg x-show="submitting" x-cloak class="animate-spin size-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span x-show="submitting" x-cloak>{{ __('Filtering...') }}</span>
                     </button>
 
                     <a

@@ -98,7 +98,7 @@
                 {{-- Form --}}
                 <form
                     method="POST"
-                    :action="$el.closest('[x-data]').dataset.action || '{{ $action }}'"
+                    action="{{ $action }}"
                     class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700"
                 >
                     @csrf

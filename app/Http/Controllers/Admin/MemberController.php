@@ -74,6 +74,7 @@ class MemberController extends Controller
                 $query->where('first_name', 'like', '%' . $q . '%')
                     ->orWhere('last_name', 'like', '%' . $q . '%')
                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $q . '%'])
+                    ->orWhereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ['%' . str_replace('.', '', $q) . '%'])
                     ->orWhere('contact_number', 'like', '%' . $q . '%')
                     ->orWhere('slug', 'like', '%' . $q . '%');
             });
@@ -394,6 +395,7 @@ class MemberController extends Controller
                 $query->where('first_name', 'like', '%' . $q . '%')
                     ->orWhere('last_name', 'like', '%' . $q . '%')
                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $q . '%'])
+                    ->orWhereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ['%' . str_replace('.', '', $q) . '%'])
                     ->orWhere('contact_number', 'like', '%' . $q . '%')
                     ->orWhere('slug', 'like', '%' . $q . '%');
             });
@@ -826,6 +828,7 @@ class MemberController extends Controller
                 $query->where('first_name', 'like', '%' . $q . '%')
                     ->orWhere('last_name', 'like', '%' . $q . '%')
                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $q . '%'])
+                    ->orWhereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ['%' . str_replace('.', '', $q) . '%'])
                     ->orWhere('contact_number', 'like', '%' . $q . '%')
                     ->orWhere('slug', 'like', '%' . $q . '%');
             });
@@ -961,7 +964,13 @@ class MemberController extends Controller
      */
     public function forceDestroy(int $id): RedirectResponse
     {
-        $member = Member::onlyTrashed()->findOrFail($id);
+        try {
+            $member = Member::onlyTrashed()->findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()
+                ->route('admin.members.trashed')
+                ->with('error', 'Member not found. It may have already been permanently deleted.');
+        }
 
         // Scope check
         $user = request()->user();

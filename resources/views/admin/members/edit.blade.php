@@ -20,7 +20,39 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.members.update', $member) }}" enctype="multipart/form-data" x-data="{ submitting: false }" @submit="submitting = true">
+                {{-- Main Member Update Form --}}
+                <form
+                    method="POST"
+                    action="{{ route('admin.members.update', $member) }}"
+                    enctype="multipart/form-data"
+                    x-data="{
+                        submitting: false,
+                        originalClubId: '{{ old('club_id', $member->club_id) }}',
+                        originalPositionId: '{{ old('position_id', $member->position_id) }}',
+                        originalFirstName: '{{ old('first_name', $member->first_name) }}',
+                        originalMiddleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
+                        originalLastName: '{{ old('last_name', $member->last_name) }}',
+                        originalSuffix: '{{ old('suffix', $member->suffix) }}',
+                        originalContactNumber: '{{ old('contact_number', $member->contact_number) }}',
+                        clubId: '{{ old('club_id', $member->club_id) }}',
+                        positionId: '{{ old('position_id', $member->position_id) }}',
+                        firstName: '{{ old('first_name', $member->first_name) }}',
+                        middleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
+                        lastName: '{{ old('last_name', $member->last_name) }}',
+                        suffix: '{{ old('suffix', $member->suffix) }}',
+                        contactNumber: '{{ old('contact_number', $member->contact_number) }}',
+                        get isDirty() {
+                            return this.firstName !== this.originalFirstName
+                                || this.lastName !== this.originalLastName
+                                || this.middleInitial !== this.originalMiddleInitial
+                                || this.suffix !== this.originalSuffix
+                                || this.contactNumber !== this.originalContactNumber
+                                || String(this.clubId) !== String(this.originalClubId)
+                                || String(this.positionId) !== String(this.originalPositionId);
+                        }
+                    }"
+                    @submit="submitting = true"
+                >
                     @csrf
                     @method('PUT')
 
@@ -31,19 +63,18 @@
                                 <p class="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
                                     {{ $clubs->first()->name }}
                                 </p>
-                                <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}">
+                                <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}" x-model.number="clubId">
                             @else
                                 <select
                                     id="club_id"
                                     name="club_id"
+                                    x-model.number="clubId"
                                     required
                                     class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 >
                                     <option value="">{{ __('Select club') }}</option>
                                     @foreach($clubs as $club)
-                                        <option value="{{ $club->id }}" @selected(old('club_id', $member->club_id) == $club->id)>
-                                            {{ $club->name }}
-                                        </option>
+                                        <option value="{{ $club->id }}">{{ $club->name }}</option>
                                     @endforeach
                                 </select>
                             @endif
@@ -57,14 +88,13 @@
                             <select
                                 id="position_id"
                                 name="position_id"
+                                x-model.number="positionId"
                                 required
                                 class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             >
                                 <option value="">{{ __('Select position') }}</option>
                                 @foreach($positions as $position)
-                                    <option value="{{ $position->id }}" @selected(old('position_id', $member->position_id) == $position->id)>
-                                        {{ $position->name }}
-                                    </option>
+                                    <option value="{{ $position->id }}">{{ $position->name }}</option>
                                 @endforeach
                             </select>
                             @error('position_id')
@@ -79,7 +109,7 @@
                                     id="first_name"
                                     name="first_name"
                                     type="text"
-                                    value="{{ old('first_name', $member->first_name) }}"
+                                    x-model="firstName"
                                     required
                                     class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
@@ -94,7 +124,7 @@
                                     id="middle_initial"
                                     name="middle_initial"
                                     type="text"
-                                    value="{{ old('middle_initial', $member->middle_initial) }}"
+                                    x-model="middleInitial"
                                     maxlength="10"
                                     class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('(opt)') }}"
@@ -110,7 +140,7 @@
                                     id="suffix"
                                     name="suffix"
                                     type="text"
-                                    value="{{ old('suffix', $member->suffix) }}"
+                                    x-model="suffix"
                                     maxlength="50"
                                     class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     placeholder="{{ __('Jr., III, etc.') }}"
@@ -128,7 +158,7 @@
                                     id="last_name"
                                     name="last_name"
                                     type="text"
-                                    value="{{ old('last_name', $member->last_name) }}"
+                                    x-model="lastName"
                                     required
                                     class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                 />
@@ -166,7 +196,7 @@
                                 id="contact_number"
                                 name="contact_number"
                                 type="text"
-                                value="{{ old('contact_number', $member->contact_number) }}"
+                                x-model="contactNumber"
                                 required
                                 class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             />
@@ -210,201 +240,13 @@
                             @enderror
                         </div>
 
-                        {{-- Certificates Section --}}
-                        <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6"
-                             x-data="{
-                                certificates: @js($member->certificates->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'file' => null, 'issued_at' => $c->issued_at ? \Carbon\Carbon::parse($c->issued_at)->format('Y-m-d') : '', 'has_file' => !is_null($c->file), 'file_url' => $c->file_url])->values()->all()),
-                                addCertificate() {
-                                    this.certificates.push({ id: null, name: '', file: null, issued_at: '', has_file: false, file_url: null });
-                                },
-                                removingIndex: null,
-                                removingName: '',
-                                confirmDeleteInput: '',
-                                confirmDelete() {
-                                    if (this.confirmDeleteInput === 'DELETE') {
-                                        this.certificates.splice(this.removingIndex, 1);
-                                    }
-                                    this.confirmDeleteInput = '';
-                                    this.removingIndex = null;
-                                    this.removingName = '';
-                                },
-                                cancelDelete() {
-                                    this.confirmDeleteInput = '';
-                                    this.removingIndex = null;
-                                    this.removingName = '';
-                                },
-                                promptDelete(index) {
-                                    // Unsaved certs (no id) — remove silently, no modal needed
-                                    if (!this.certificates[index].id) {
-                                        this.certificates.splice(index, 1);
-                                        return;
-                                    }
-                                    this.removingIndex = index;
-                                    this.removingName = this.certificates[index].name || 'Certificate #' + (index + 1);
-                                    this.confirmDeleteInput = '';
-                                }
-                             }">
-                            <input type="hidden" name="certificates_managed" value="1">
-                            <div class="flex items-center justify-between mb-3">
-                                <div>
-                                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ __('Certificates') }}</h3>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Manage certificates, awards, and recognitions.') }}</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    @click="addCertificate()"
-                                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition"
-                                >
-                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                    </svg>
-                                    {{ __('Add Certificate') }}
-                                </button>
-                            </div>
-
-                            <template x-for="(cert, index) in certificates" :key="index">
-                                <div class="p-4 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="'Certificate #' + (index + 1)"></span>
-                                        <button
-                                            type="button"
-                                            @click="promptDelete(index)"
-                                            class="text-red-500 hover:text-red-700 transition"
-                                            title="{{ __('Remove certificate') }}"
-                                        >
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    {{-- Existing file link --}}
-                                    <template x-if="cert.has_file && cert.file_url">
-                                        <div class="mb-3 flex items-center gap-2 text-sm">
-                                            <svg class="h-4 w-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                            <a :href="cert.file_url" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">{{ __('View current file') }}</a>
-                                        </div>
-                                    </template>
-
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <x-input-label x-bind:for="'certificates_' + index + '_name'" :value="__('Certificate Name')" />
-                                            <input
-                                                :id="'certificates_' + index + '_name'"
-                                                :name="'certificates[' + index + '][name]'"
-                                                type="text"
-                                                x-model="cert.name"
-                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                                placeholder="{{ __('e.g. Leadership Award') }}"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <x-input-label x-bind:for="'certificates_' + index + '_issued_at'" :value="__('Date Issued')" />
-                                            <input
-                                                :id="'certificates_' + index + '_issued_at'"
-                                                :name="'certificates[' + index + '][issued_at]'"
-                                                type="date"
-                                                x-model="cert.issued_at"
-                                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                            />
-                                        </div>
-
-                                        <div class="sm:col-span-2">
-                                            <x-input-label x-bind:for="'certificates_' + index + '_file'" :value="__('Certificate File')" />
-                                            <input
-                                                :id="'certificates_' + index + '_file'"
-                                                :name="'certificates[' + index + '][file]'"
-                                                type="file"
-                                                accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                                class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
-                                            />
-                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB. Leave empty to keep current.') }}</p>
-                                            @error('certificates.*.file')
-                                                <x-input-error class="mt-1" :messages="[$message]" />
-                                            @enderror
-                                        </div>
-
-                                        {{-- Hidden ID field --}}
-                                        <input type="hidden" :name="'certificates[' + index + '][id]'" :value="cert.id">
-                                    </div>
-                                </div>
-                            </template>
-
-                            {{-- Certificate Delete Confirmation Modal --}}
-                            <template x-teleport="body">
-                                <div
-                                    x-show="removingIndex !== null"
-                                    x-transition.opacity.duration.200ms
-                                    class="fixed inset-0 z-50 flex items-center justify-center"
-                                    @keydown.escape.window="cancelDelete()"
-                                >
-                                    <div class="absolute inset-0 bg-black/40" @click="cancelDelete()"></div>
-                                    <div class="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden" @click.stop>
-                                        <div class="px-6 pt-5 pb-4">
-                                            <div class="flex items-start gap-4">
-                                                <div class="shrink-0 size-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                                    <svg class="size-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                    </svg>
-                                                </div>
-                                                <div class="flex-1 min-w-0">
-                                                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ __('Remove Certificate') }}</h3>
-                                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                                                        {{ __('Remove the certificate') }}
-                                                        "<span x-text="removingName" class="font-semibold"></span>"
-                                                        {{ __('from this member. Any uploaded file will be permanently deleted.') }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="px-6 pb-2">
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                {{ __('Type DELETE to confirm') }}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                x-model="confirmDeleteInput"
-                                                @keydown.enter="confirmDelete()"
-                                                placeholder="DELETE"
-                                                class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
-                                                autocomplete="off"
-                                            >
-                                        </div>
-                                        <div class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
-                                            <button
-                                                type="button"
-                                                @click="cancelDelete()"
-                                                class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
-                                            >
-                                                {{ __('Cancel') }}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                @click="confirmDelete()"
-                                                :disabled="confirmDeleteInput !== 'DELETE'"
-                                                :class="confirmDeleteInput === 'DELETE' ? 'opacity-100' : 'opacity-50 cursor-not-allowed'"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition"
-                                            >
-                                                {{ __('Remove') }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <p x-show="certificates.length === 0" class="text-sm text-gray-400 dark:text-gray-500 text-center py-4 italic">
-                                {{ __('No certificates added yet. Click "Add Certificate" above.') }}
-                            </p>
-                        </div>
-
+                        {{-- Update & Cancel Buttons (moved BEFORE certificates) --}}
                         <div class="flex items-center gap-3 pt-2">
                             <button
                                 type="submit"
-                                :disabled="submitting"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                x-bind:disabled="!isDirty || submitting"
+                                x-bind:class="!isDirty || submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700'"
+                                class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                             >
                                 <span x-show="!submitting">{{ __('Update') }}</span>
                                 <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
@@ -426,7 +268,285 @@
                     </div>
                 </form>
 
-                {{-- Payments Section (outside main form to avoid nested form issue) --}}
+                {{-- Certificates Section (independent inline CRUD, outside main form) --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                                <svg class="size-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                                {{ __('Certificates') }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Add, edit, or remove certificates, awards, and recognitions.') }}</p>
+                        </div>
+                    </div>
+
+                    {{-- Add Certificate Form --}}
+                    <div
+                        class="mb-4 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30"
+                        x-data="{ showForm: false }"
+                    >
+                        <button
+                            type="button"
+                            @click="showForm = !showForm"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition"
+                        >
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span x-show="!showForm">{{ __('Add Certificate') }}</span>
+                            <span x-show="showForm" x-cloak>{{ __('Cancel') }}</span>
+                        </button>
+
+                        <form
+                            method="POST"
+                            action="{{ route('admin.certificates.store') }}"
+                            enctype="multipart/form-data"
+                            x-show="showForm"
+                            x-cloak
+                            x-transition
+                            class="mt-4"
+                        >
+                            @csrf
+                            <input type="hidden" name="member_id" value="{{ $member->id }}">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <x-input-label for="new_cert_name" :value="__('Certificate Name')" />
+                                    <input
+                                        id="new_cert_name"
+                                        name="name"
+                                        type="text"
+                                        required
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        placeholder="{{ __('e.g. Leadership Award') }}"
+                                    />
+                                </div>
+                                <div>
+                                    <x-input-label for="new_cert_issued_at" :value="__('Date Issued')" />
+                                    <input
+                                        id="new_cert_issued_at"
+                                        name="issued_at"
+                                        type="date"
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                    />
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <x-input-label for="new_cert_file" :value="__('Certificate File')" />
+                                    <input
+                                        id="new_cert_file"
+                                        name="file"
+                                        type="file"
+                                        accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                        class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                    />
+                                    <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-500 transition"
+                                >
+                                    {{ __('Save Certificate') }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {{-- Existing Certificates List --}}
+                    @php $certificates = $member->certificates; @endphp
+
+                    @if($certificates->count() > 0)
+                        <div class="space-y-2">
+                            @foreach($certificates as $cert)
+                                <div
+                                    class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm"
+                                    x-data="{ editing: false }"
+                                >
+                                    <svg class="size-4 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+
+                                    {{-- Display mode --}}
+                                    <template x-if="!editing">
+                                        <div class="flex-1 flex items-center gap-2 flex-wrap">
+                                            <span class="font-semibold text-amber-800 dark:text-amber-300">{{ $cert->name }}</span>
+                                            @if($cert->issued_at)
+                                                <span class="text-xs text-amber-600 dark:text-amber-400">
+                                                    {{ \Carbon\Carbon::parse($cert->issued_at)->format('M d, Y') }}
+                                                </span>
+                                            @endif
+                                            @if($cert->file_url)
+                                                <a
+                                                    href="{{ $cert->file_url }}"
+                                                    target="_blank"
+                                                    class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                >
+                                                    <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                    </svg>
+                                                    {{ __('View File') }}
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </template>
+
+                                    {{-- Edit mode --}}
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.certificates.update', $cert->id) }}"
+                                        enctype="multipart/form-data"
+                                        x-show="editing"
+                                        @submit="editing = false"
+                                        class="flex-1"
+                                    >
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value="{{ $cert->name }}"
+                                                required
+                                                class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            >
+                                            <input
+                                                type="date"
+                                                name="issued_at"
+                                                value="{{ $cert->issued_at ? \Carbon\Carbon::parse($cert->issued_at)->format('Y-m-d') : '' }}"
+                                                class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            >
+                                            <input
+                                                type="file"
+                                                name="file"
+                                                accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                                class="block w-full text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400"
+                                            >
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <button
+                                                type="submit"
+                                                class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-semibold hover:bg-indigo-500 transition"
+                                            >
+                                                {{ __('Save') }}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="editing = false"
+                                                class="text-[10px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                            >
+                                                {{ __('Cancel') }}
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    {{-- Actions --}}
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        {{-- Edit button --}}
+                                        <button
+                                            type="button"
+                                            @click="editing = !editing"
+                                            class="size-7 flex items-center justify-center rounded-md text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition"
+                                            title="{{ __('Edit') }}"
+                                        >
+                                            <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+
+                                        {{-- Delete button --}}
+                                        <div x-data="{ open: false, confirmInput: '' }">
+                                            <button
+                                                type="button"
+                                                @click="open = true"
+                                                class="size-7 flex items-center justify-center rounded-md text-red-400 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
+                                                title="{{ __('Delete') }}"
+                                            >
+                                                <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                            </button>
+
+                                            {{-- Delete Confirmation Modal --}}
+                                            <template x-teleport="body">
+                                                <div
+                                                    x-show="open"
+                                                    x-transition.opacity.duration.200ms
+                                                    class="fixed inset-0 z-50 flex items-center justify-center"
+                                                    @keydown.escape.window="open = false; confirmInput = ''"
+                                                >
+                                                    <div class="absolute inset-0 bg-black/40" @click="open = false; confirmInput = ''"></div>
+                                                    <div class="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden" @click.stop>
+                                                        <div class="px-6 pt-5 pb-4">
+                                                            <div class="flex items-start gap-4">
+                                                                <div class="shrink-0 size-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                                                    <svg class="size-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                                    </svg>
+                                                                </div>
+                                                                <div class="flex-1 min-w-0">
+                                                                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ __('Remove Certificate') }}</h3>
+                                                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                                                        {{ __('Remove the certificate') }}
+                                                                        "<span class="font-semibold">{{ $cert->name }}</span>"
+                                                                        {{ __('from this member. Any uploaded file will be permanently deleted.') }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="px-6 pb-2">
+                                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                                {{ __('Type DELETE to confirm') }}
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                x-model="confirmInput"
+                                                                @keydown.enter="if (confirmInput === 'DELETE') $el.closest('[x-data]').querySelector('form').submit()"
+                                                                placeholder="DELETE"
+                                                                class="block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm"
+                                                                autocomplete="off"
+                                                            >
+                                                        </div>
+                                                        <form
+                                                            method="POST"
+                                                            action="{{ route('admin.certificates.destroy', $cert->id) }}"
+                                                            class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700"
+                                                        >
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <input type="hidden" name="confirm_delete" value="1">
+                                                            <input type="hidden" name="confirm_text" x-bind:value="confirmInput">
+                                                            <button
+                                                                type="button"
+                                                                @click="open = false; confirmInput = ''"
+                                                                class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                                                            >
+                                                                {{ __('Cancel') }}
+                                                            </button>
+                                                            <button
+                                                                type="submit"
+                                                                :disabled="confirmInput !== 'DELETE'"
+                                                                :class="confirmInput === 'DELETE' ? 'opacity-100' : 'opacity-50 cursor-not-allowed'"
+                                                                class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition"
+                                                            >
+                                                                {{ __('Delete') }}
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-400 dark:text-gray-500 italic mb-4">{{ __('No certificates added yet.') }}</p>
+                    @endif
+                </div>
+
+                {{-- Payments Section (independent inline CRUD, outside main form) --}}
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
                     <div class="flex items-center justify-between mb-3">
                         <div>

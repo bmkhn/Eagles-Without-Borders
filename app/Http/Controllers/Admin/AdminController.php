@@ -278,6 +278,7 @@ class AdminController extends Controller
         if ($q !== '') {
             $logsQuery->where(function ($query) use ($q) {
                 $query->where('description', 'like', '%' . $q . '%')
+                    ->orWhere('properties', 'like', '%' . $q . '%')
                     ->orWhereHas('causer', function ($cq) use ($q) {
                         $cq->where('name', 'like', '%' . $q . '%')
                            ->orWhere('email', 'like', '%' . $q . '%');

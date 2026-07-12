@@ -12,14 +12,14 @@
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{{ __('Activity Log') }}</h3>
 
                     <!-- Search & Filter -->
-                    <form method="GET" action="{{ route('admin.audit-logs') }}" class="mb-4">
+                    <form method="GET" action="{{ route('admin.audit-logs') }}" class="mb-4" x-data="{ submitting: false }" @submit="submitting = true">
                         <div class="flex gap-3">
                             <div class="flex-1">
                                 <input
                                     type="text"
                                     name="q"
                                     value="{{ $q }}"
-                                    placeholder="{{ __('Search by description or admin...') }}"
+                                    placeholder="{{ __('Search by details or admin...') }}"
                                     class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                 />
                             </div>
@@ -47,8 +47,13 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                                {{ __('Search') }}
+                            <button type="submit" x-bind:disabled="submitting" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-70 disabled:cursor-wait">
+                                <span x-show="!submitting">{{ __('Search') }}</span>
+                                <svg x-show="submitting" x-cloak class="animate-spin size-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span x-show="submitting" x-cloak>{{ __('Searching...') }}</span>
                             </button>
                         </div>
                     </form>

@@ -51,7 +51,8 @@ class PaymentController extends Controller
             $paymentsQuery->whereHas('member', function ($q) use ($filterMemberName) {
                 $q->where('first_name', 'like', '%' . $filterMemberName . '%')
                   ->orWhere('last_name', 'like', '%' . $filterMemberName . '%')
-                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $filterMemberName . '%']);
+                  ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $filterMemberName . '%'])
+                  ->orWhereRaw("CONCAT_WS(' ', first_name, middle_initial, last_name, suffix) LIKE ?", ['%' . str_replace('.', '', $filterMemberName) . '%']);
             });
         }
 

@@ -164,6 +164,19 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
         ->name('admin.payments.destroy');
 
+    // Certificates (inline CRUD on member edit page)
+    Route::post('/certificates', [\App\Http\Controllers\Admin\CertificateController::class, 'store'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.certificates.store');
+
+    Route::put('/certificates/{certificate}', [\App\Http\Controllers\Admin\CertificateController::class, 'update'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.certificates.update');
+
+    Route::delete('/certificates/{certificate}', [\App\Http\Controllers\Admin\CertificateController::class, 'destroy'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:edit-members'])
+        ->name('admin.certificates.destroy');
+
     // Email uniqueness check (used by live real-time validation in forms)
     Route::get('/check-email', function (Illuminate\Http\Request $request) {
         $email = $request->input('email');

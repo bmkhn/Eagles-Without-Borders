@@ -101,7 +101,7 @@
                         </div>
                     </div>
 
-                    <form method="GET" action="{{ route('admin.members.index') }}" class="mb-4">
+                    <form method="GET" action="{{ route('admin.members.index') }}" class="mb-4" x-data="{ submitting: false }" @submit="submitting = true">
                         <!-- Search row -->
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
                             <div class="flex-1">
@@ -121,9 +121,15 @@
                             <div class="flex gap-2">
                                 <button
                                     type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    x-bind:disabled="submitting"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-wait"
                                 >
-                                    {{ __('Search') }}
+                                    <span x-show="!submitting">{{ __('Search') }}</span>
+                                    <svg x-show="submitting" x-cloak class="animate-spin size-4" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span x-show="submitting" x-cloak>{{ __('Searching...') }}</span>
                                 </button>
 
                                 @if($q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId)

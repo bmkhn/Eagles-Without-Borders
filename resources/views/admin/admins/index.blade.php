@@ -27,7 +27,7 @@
                 <x-card title="Search & Manage">
 
                     <!-- Search & Filter -->
-                    <form method="GET" action="{{ route('admin.admins.index') }}" class="mb-4">
+                    <form method="GET" action="{{ route('admin.admins.index') }}" class="mb-4" x-data="{ submitting: false }" @submit="submitting = true">
                         <div class="flex gap-3">
                             <div class="flex-1">
                                 <input
@@ -51,8 +51,13 @@
                                 <option value="regional-admin" @selected($filterRole === 'regional-admin')>{{ __('Regional Admin') }}</option>
                                 <option value="club-admin" @selected($filterRole === 'club-admin')>{{ __('Club Admin') }}</option>
                             </select>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                                {{ __('Search') }}
+                            <button type="submit" x-bind:disabled="submitting" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-70 disabled:cursor-wait">
+                                <span x-show="!submitting">{{ __('Search') }}</span>
+                                <svg x-show="submitting" x-cloak class="animate-spin size-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span x-show="submitting" x-cloak>{{ __('Searching...') }}</span>
                             </button>
                         </div>
                     </form>
