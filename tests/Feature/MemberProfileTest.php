@@ -201,11 +201,14 @@ class MemberProfileTest extends TestCase
     }
 
     /** @test */
-    public function it_returns_404_for_non_existent_slug(): void
+    public function it_shows_member_not_found_page_for_non_existent_slug(): void
     {
         $response = $this->get(route('member.profile', 'non-existent-slug'));
 
-        $response->assertStatus(404);
+        $response->assertStatus(200);
+        $response->assertSee('Member Not Found');
+        $response->assertSee('check the URL');
+        $response->assertSee('typos or spelling');
     }
 
     /** @test */

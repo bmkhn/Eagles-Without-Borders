@@ -15,8 +15,6 @@ abstract class TestCase extends BaseTestCase
         config()->set('session.driver', 'array');
 
         // Disable CSRF verification for all tests.
-        // withoutMiddleware(ClassName) replaces the class binding in the
-        // container so the kernel resolves the no-op instead.
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
     }
 }
