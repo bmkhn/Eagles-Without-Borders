@@ -38,19 +38,18 @@
                         ->get()
                         ->groupBy(fn($c) => $c->region?->name ?? 'Unassigned');
 
-                    $posMap = [];
-                    foreach (\App\Models\Member::with('position')->get() as $m) {
-                        $key = $m->position_id ?? 0;
-                        if (!isset($posMap[$key])) {
-                            $posMap[$key] = [
-                                'id' => $m->position_id,
-                                'name' => $m->position?->name ?? 'Unassigned',
-                                'count' => 0,
-                            ];
-                        }
-                        $posMap[$key]['count']++;
-                    }
-                    $positionsAll = collect($posMap)->sortByDesc('count');
+                    $positionsAll = \App\Models\Member::query()
+                        ->select('position_id')
+                        ->selectRaw('COUNT(*) as count')
+                        ->with('position')
+                        ->groupBy('position_id')
+                        ->get()
+                        ->map(fn($m) => [
+                            'id' => $m->position_id,
+                            'name' => $m->position?->name ?? 'Unassigned',
+                            'count' => (int) $m->count,
+                        ])
+                        ->sortByDesc('count');
                 } elseif ($isRegionalAdmin) {
                     // Regional admin: scoped to their region
                     $region = $user->region_id ? \App\Models\Region::find($user->region_id) : null;
@@ -282,19 +281,18 @@
                     $regionActivePct = $regionTotal > 0 ? round(($activeCount / $regionTotal) * 100) : 0;
                     $regionInactivePct = $regionTotal > 0 ? round(($inactiveCount / $regionTotal) * 100) : 0;
 
-                    $raPosMap = [];
-                    foreach (\App\Models\Member::whereIn('club_id', $regionClubIds)->with('position')->get() as $m) {
-                        $key = $m->position_id ?? 0;
-                        if (!isset($raPosMap[$key])) {
-                            $raPosMap[$key] = [
-                                'id' => $m->position_id,
-                                'name' => $m->position?->name ?? 'Unassigned',
-                                'count' => 0,
-                            ];
-                        }
-                        $raPosMap[$key]['count']++;
-                    }
-                    $raPositions = collect($raPosMap)->sortByDesc('count');
+                    $raPositions = \App\Models\Member::whereIn('club_id', $regionClubIds)
+                        ->select('position_id')
+                        ->selectRaw('COUNT(*) as count')
+                        ->with('position')
+                        ->groupBy('position_id')
+                        ->get()
+                        ->map(fn($m) => [
+                            'id' => $m->position_id,
+                            'name' => $m->position?->name ?? 'Unassigned',
+                            'count' => (int) $m->count,
+                        ])
+                        ->sortByDesc('count');
                 @endphp
 
                 <div class="mb-8">
@@ -365,19 +363,18 @@
                     $clubActivePct = $clubTotal > 0 ? round(($activeCount / $clubTotal) * 100) : 0;
                     $clubInactivePct = $clubTotal > 0 ? round(($inactiveCount / $clubTotal) * 100) : 0;
 
-                    $cpPosMap = [];
-                    foreach (\App\Models\Member::where('club_id', $club->id)->with('position')->get() as $m) {
-                        $key = $m->position_id ?? 0;
-                        if (!isset($cpPosMap[$key])) {
-                            $cpPosMap[$key] = [
-                                'id' => $m->position_id,
-                                'name' => $m->position?->name ?? 'Unassigned',
-                                'count' => 0,
-                            ];
-                        }
-                        $cpPosMap[$key]['count']++;
-                    }
-                    $cpPositions = collect($cpPosMap)->sortByDesc('count');
+                    $cpPositions = \App\Models\Member::where('club_id', $club->id)
+                        ->select('position_id')
+                        ->selectRaw('COUNT(*) as count')
+                        ->with('position')
+                        ->groupBy('position_id')
+                        ->get()
+                        ->map(fn($m) => [
+                            'id' => $m->position_id,
+                            'name' => $m->position?->name ?? 'Unassigned',
+                            'count' => (int) $m->count,
+                        ])
+                        ->sortByDesc('count');
                 @endphp
 
                 <div class="mb-8">

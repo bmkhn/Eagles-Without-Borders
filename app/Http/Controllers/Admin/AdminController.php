@@ -8,6 +8,7 @@ use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
@@ -288,17 +289,21 @@ class AdminController extends Controller
 
         $logs = $logsQuery->paginate(20)->withQueryString();
 
-        $eventTypes = Activity::query()
-            ->select('description')
-            ->distinct()
-            ->pluck('description')
-            ->toArray();
+        [$eventTypes, $logNames] = Cache::remember('audit_log_filter_options', 3600, function () {
+            $eventTypes = Activity::query()
+                ->select('description')
+                ->distinct()
+                ->pluck('description')
+                ->toArray();
 
-        $logNames = Activity::query()
-            ->select('log_name')
-            ->distinct()
-            ->pluck('log_name')
-            ->toArray();
+            $logNames = Activity::query()
+                ->select('log_name')
+                ->distinct()
+                ->pluck('log_name')
+                ->toArray();
+
+            return [$eventTypes, $logNames];
+        });
 
         return view('admin.audit-logs', [
             'logs' => $logs,
