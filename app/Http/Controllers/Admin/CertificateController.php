@@ -160,6 +160,11 @@ class CertificateController extends Controller
 
         $certName = $certificate->name;
 
+        // Delete the certificate file from disk
+        if ($certificate->file) {
+            Storage::disk('public')->delete($certificate->file);
+        }
+
         activity()
             ->performedOn($certificate)
             ->causedBy(auth()->user())
