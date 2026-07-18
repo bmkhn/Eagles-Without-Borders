@@ -161,8 +161,8 @@
                         </li>
                     @endif
 
-                    <!-- Audit Logs (Super Admin & National Admin) -->
-                    @if($isSuperAdmin || $isNationalAdmin)
+                    <!-- Audit Logs (all admin roles, scoped) -->
+                    @if($isAdmin)
                         <li class="mt-1">
                             <a
                                 href="{{ route('admin.audit-logs') }}"

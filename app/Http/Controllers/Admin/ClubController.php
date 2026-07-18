@@ -184,22 +184,35 @@ class ClubController extends Controller
         if ((string) $original['name'] !== (string) $newName) {
             $changes['name'] = ['old' => $original['name'], 'new' => $newName];
         }
-        if ((string) $original['region_id'] !== (string) $newRegionId) {
+        $regionChanged = (string) $original['region_id'] !== (string) $newRegionId;
+        if ($regionChanged) {
             $changes['region_id'] = ['old' => $original['region_id'], 'new' => $newRegionId];
         }
 
         $changes = array_merge($changes, $cpChanges);
 
-        activity()
-            ->performedOn($club)
-            ->causedBy(auth()->user())
-            ->withProperties([
-                'changes' => $changes,
-                'club_id' => $club->id,
-                'club_name' => $club->name,
-                'region_id' => $club->region_id,
-            ])
-            ->log('updated');
+        // ── Enrich properties with old/new names when region changes ──
+        $extraProperties = [];
+        if ($regionChanged) {
+            $oldRegionId = $original['region_id'];
+            $oldRegion = $oldRegionId ? Region::find($oldRegionId) : null;
+            $extraProperties['old_region'] = $oldRegion?->name;
+            $extraProperties['new_region'] = $club->region?->name;
+        }
+
+        // ── Log single update event (seen by both sender and receiver via scoping) ──
+        if (!empty($changes)) {
+            activity()
+                ->performedOn($club)
+                ->causedBy(auth()->user())
+                ->withProperties(array_merge([
+                    'changes' => $changes,
+                    'club_id' => $club->id,
+                    'club_name' => $club->name,
+                    'region_id' => $club->region_id,
+                ], $extraProperties))
+                ->log('updated');
+        }
 
         return redirect()
             ->route('admin.clubs.index')

@@ -202,26 +202,84 @@ class MemberController extends Controller
             $this->syncCertificates($member, $request);
         }
 
+        // Record payments if provided
+        $paymentsRecorded = 0;
+        if ($request->has('payments')) {
+            $existingYears = Payment::where('member_id', $member->id)->pluck('year_paid')->toArray();
+
+            foreach ($request->input('payments', []) as $paymentData) {
+                $yearPaid = (int) ($paymentData['year_paid'] ?? 0);
+
+                if ($yearPaid < 2000 || $yearPaid > 2099) {
+                    continue;
+                }
+
+                // Skip if already exists for this member+year
+                if (in_array($yearPaid, $existingYears)) {
+                    continue;
+                }
+
+                $datePaid = !empty($paymentData['date_paid'])
+                    ? \Carbon\Carbon::parse($paymentData['date_paid'])
+                    : now();
+
+                Payment::create([
+                    'member_id' => $member->id,
+                    'year_paid' => $yearPaid,
+                    'date_paid' => $datePaid,
+                ]);
+
+                $existingYears[] = $yearPaid;
+                $paymentsRecorded++;
+
+                activity('payment')
+                    ->performedOn($member)
+                    ->causedBy(auth()->user())
+                    ->withProperties([
+                        'member_id' => $member->id,
+                        'member_name' => $member->name,
+                        'year_paid' => $yearPaid,
+                        'date_paid' => $datePaid->format('Y-m-d'),
+                        'source' => 'member_creation',
+                    ])
+                    ->log('payment_recorded');
+            }
+
+            if ($paymentsRecorded > 0) {
+                $member->updateStatusFromPayments();
+            }
+        }
+
         $member->load('club.region');
+
+        $logProperties = [
+            'member_id' => $member->id,
+            'member_name' => $member->name,
+            'club' => $member->club?->name,
+            'region' => $member->club?->region?->name,
+            'position' => $member->position?->name,
+            'status' => $member->status,
+            'contact_number' => $member->contact_number,
+            'source' => 'manual_create',
+        ];
+
+        if ($paymentsRecorded > 0) {
+            $logProperties['payments_recorded'] = $paymentsRecorded;
+        }
 
         activity()
             ->performedOn($member)
             ->causedBy(auth()->user())
-            ->withProperties([
-                'member_id' => $member->id,
-                'member_name' => $member->name,
-                'club' => $member->club?->name,
-                'region' => $member->club?->region?->name,
-                'position' => $member->position?->name,
-                'status' => $member->status,
-                'contact_number' => $member->contact_number,
-                'source' => 'manual_create',
-            ])
+            ->withProperties($logProperties)
             ->log('created');
+
+        $successMessage = $paymentsRecorded > 0
+            ? 'Member created successfully with ' . $paymentsRecorded . ' payment(s) recorded.'
+            : 'Member created successfully.';
 
         return redirect()
             ->route('admin.members.index')
-            ->with('success', 'Member created successfully.');
+            ->with('success', $successMessage);
     }
 
     public function edit(Member $member): View
@@ -322,20 +380,33 @@ class MemberController extends Controller
             $changes['profile_picture'] = ['old' => '(had photo)', 'new' => '(removed)'];
         }
 
-        activity()
-            ->performedOn($member)
-            ->causedBy(auth()->user())
-            ->withProperties([
-                'changes' => $changes,
-                'member_id' => $member->id,
-                'member_name' => $member->name,
-                'club' => $member->club?->name,
-                'region' => $member->club?->region?->name,
-                'position' => $member->position?->name,
-                'status' => $member->status,
-                'contact_number' => $member->contact_number,
-            ])
-            ->log('updated');
+        // ── Enrich properties with old/new names when club changes ──
+        $clubChanged = isset($changes['club_id']);
+        $extraProperties = [];
+        if ($clubChanged) {
+            $oldClubId = $original['club_id'];
+            $oldClub = $oldClubId ? Club::find($oldClubId) : null;
+            $extraProperties['old_club'] = $oldClub?->name;
+            $extraProperties['new_club'] = $member->club?->name;
+        }
+
+        // ── Log single update event (seen by both sender and receiver via scoping) ──
+        if (!empty($changes)) {
+            activity()
+                ->performedOn($member)
+                ->causedBy(auth()->user())
+                ->withProperties(array_merge([
+                    'changes' => $changes,
+                    'member_id' => $member->id,
+                    'member_name' => $member->name,
+                    'club' => $member->club?->name,
+                    'region' => $member->club?->region?->name,
+                    'position' => $member->position?->name,
+                    'status' => $member->status,
+                    'contact_number' => $member->contact_number,
+                ], $extraProperties))
+                ->log('updated');
+        }
 
         return redirect()
             ->route('admin.members.index')

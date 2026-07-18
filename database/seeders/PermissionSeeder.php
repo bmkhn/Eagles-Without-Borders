@@ -82,7 +82,7 @@ class PermissionSeeder extends Seeder
                 'view-audit-logs',
             ]);
 
-        // regional-admin: clubs + members (scoped by middleware)
+        // regional-admin: clubs + members + audit logs (scoped by middleware)
         Role::findByName('regional-admin', 'web')
             ->syncPermissions([
                 'view-clubs',
@@ -93,15 +93,17 @@ class PermissionSeeder extends Seeder
                 'create-members',
                 'edit-members',
                 'delete-members',
+                'view-audit-logs',
             ]);
 
-        // club-admin: members only (scoped by middleware)
+        // club-admin: members + audit logs (scoped by middleware)
         Role::findByName('club-admin', 'web')
             ->syncPermissions([
                 'view-members',
                 'create-members',
                 'edit-members',
                 'delete-members',
+                'view-audit-logs',
             ]);
 
         $this->command->info('Permissions seeded and assigned to roles.');

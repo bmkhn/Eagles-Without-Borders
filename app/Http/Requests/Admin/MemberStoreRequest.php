@@ -38,6 +38,11 @@ class MemberStoreRequest extends FormRequest
             'certificates.*.name' => ['required_with:certificates.*.file', 'string', 'max:255'],
             'certificates.*.file' => ['nullable', 'file', 'mimes:pdf,jpeg,png,jpg,gif,webp', 'max:5120'],
             'certificates.*.issued_at' => ['nullable', 'date'],
+
+            // Payments (optional, recorded at creation)
+            'payments' => ['nullable', 'array'],
+            'payments.*.year_paid' => ['required', 'integer', 'min:2000', 'max:2099'],
+            'payments.*.date_paid' => ['nullable', 'date'],
         ];
     }
 
@@ -47,6 +52,8 @@ class MemberStoreRequest extends FormRequest
             'certificates.*.name' => 'certificate name',
             'certificates.*.file' => 'certificate file',
             'certificates.*.issued_at' => 'certificate issue date',
+            'payments.*.year_paid' => 'payment year',
+            'payments.*.date_paid' => 'payment date',
         ];
     }
 }

@@ -45,8 +45,8 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
             ->name('admin.admins.destroy');
     });
 
-    // Super Admin & National Admin: audit logs
-    Route::middleware(['role:super-admin|national-admin', 'permission:view-audit-logs'])->group(function () {
+    // Audit logs: Super Admin, National Admin, Regional Admin, & Club Admin (scoped)
+    Route::middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-audit-logs'])->group(function () {
         Route::get('/audit-logs', [\App\Http\Controllers\Admin\AdminController::class, 'auditLogs'])
             ->name('admin.audit-logs');
     });

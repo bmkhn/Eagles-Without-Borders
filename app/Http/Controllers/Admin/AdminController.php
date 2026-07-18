@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Models\Member;
 use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -269,11 +270,106 @@ class AdminController extends Controller
 
     public function auditLogs(): View
     {
+        $user = request()->user();
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $isNationalAdmin = $user->hasRole('national-admin');
+        $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
+        $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
+
         $q = request()->string('q')->trim()->toString();
         $filterEvent = request()->string('event')->trim()->toString();
         $filterLogName = request()->string('log_name')->trim()->toString();
 
         $logsQuery = Activity::query()->with('causer')->latest();
+
+        // Super Admin & National Admin see everything
+        if ($isSuperAdmin || $isNationalAdmin) {
+            // No scoping needed
+        }
+        // Regional Admin: scope to their region
+        elseif ($isRegionalAdmin) {
+            $regionId = (int) $user->region_id;
+            $clubIdsInRegion = Club::where('region_id', $regionId)->pluck('id')->toArray();
+            $memberIdsInRegion = Member::withTrashed()
+                ->whereHas('club', fn ($q) => $q->where('region_id', $regionId))
+                ->pluck('id')
+                ->toArray();
+
+            $logsQuery->where(function ($query) use ($user, $regionId, $clubIdsInRegion, $memberIdsInRegion) {
+                // 1. Activities they caused themselves
+                $query->orWhere('causer_id', $user->id);
+
+                // 2. Subject is a member in their region
+                if (!empty($memberIdsInRegion)) {
+                    $query->orWhere(function ($q) use ($memberIdsInRegion) {
+                        $q->whereIn('subject_id', $memberIdsInRegion)
+                          ->where('subject_type', (new Member)->getMorphClass());
+                    });
+                }
+
+                // 3. Subject is a club in their region
+                if (!empty($clubIdsInRegion)) {
+                    $query->orWhere(function ($q) use ($clubIdsInRegion) {
+                        $q->whereIn('subject_id', $clubIdsInRegion)
+                          ->where('subject_type', (new Club)->getMorphClass());
+                    });
+                }
+
+                // 4. Subject is their region
+                $query->orWhere(function ($q) use ($regionId) {
+                    $q->where('subject_id', $regionId)
+                      ->where('subject_type', (new Region)->getMorphClass());
+                });
+
+                // 5. Properties contain their region_id (catches activities without a subject model)
+                $query->orWhereJsonContains('properties->region_id', $regionId);
+                // Also catch region moves: changes->region_id->old/new (club moved out/in of region)
+                $query->orWhereJsonContains('properties->changes->region_id->old', (string) $regionId);
+                $query->orWhereJsonContains('properties->changes->region_id->new', (string) $regionId);
+
+                // 6. Properties contain club_ids of clubs in their region (catches member moves in/out)
+                foreach ($clubIdsInRegion as $cid) {
+                    // Exact top-level integer match
+                    $query->orWhereJsonContains('properties->club_id', $cid);
+                    // Nested changes match for moves (values stored as strings in changes)
+                    $query->orWhereJsonContains('properties->changes->club_id->old', (string) $cid);
+                    $query->orWhereJsonContains('properties->changes->club_id->new', (string) $cid);
+                }
+            });
+        }
+        // Club Admin: scope to their club
+        elseif ($isClubAdmin) {
+            $clubId = (int) $user->club_id;
+            $memberIdsInClub = Member::withTrashed()
+                ->where('club_id', $clubId)
+                ->pluck('id')
+                ->toArray();
+
+            $logsQuery->where(function ($query) use ($user, $clubId, $memberIdsInClub) {
+                // 1. Activities they caused themselves
+                $query->orWhere('causer_id', $user->id);
+
+                // 2. Subject is a member in their club
+                if (!empty($memberIdsInClub)) {
+                    $query->orWhere(function ($q) use ($memberIdsInClub) {
+                        $q->whereIn('subject_id', $memberIdsInClub)
+                          ->where('subject_type', (new Member)->getMorphClass());
+                    });
+                }
+
+                // 3. Subject is their club
+                $query->orWhere(function ($q) use ($clubId) {
+                    $q->where('subject_id', $clubId)
+                      ->where('subject_type', (new Club)->getMorphClass());
+                });
+
+                // 4. Properties contain their club_id (catches member moves in/out)
+                $query->orWhereJsonContains('properties->club_id', $clubId);
+                // Nested changes match for moves (values stored as strings in changes)
+                $query->orWhereJsonContains('properties->changes->club_id->old', (string) $clubId);
+                $query->orWhereJsonContains('properties->changes->club_id->new', (string) $clubId);
+            });
+        }
 
         if ($q !== '') {
             $logsQuery->where(function ($query) use ($q) {
@@ -296,18 +392,75 @@ class AdminController extends Controller
 
         $logs = $logsQuery->paginate(20)->withQueryString();
 
-        [$eventTypes, $logNames] = Cache::remember('audit_log_filter_options', 3600, function () {
-            $eventTypes = Activity::query()
-                ->select('description')
-                ->distinct()
-                ->pluck('description')
-                ->toArray();
+        [$eventTypes, $logNames] = Cache::remember('audit_log_filter_options', 3600, function () use ($user, $isSuperAdmin, $isNationalAdmin, $isRegionalAdmin, $isClubAdmin) {
+            $eventTypesQuery = Activity::query()->select('description')->distinct();
+            $logNamesQuery = Activity::query()->select('log_name')->distinct();
 
-            $logNames = Activity::query()
-                ->select('log_name')
-                ->distinct()
-                ->pluck('log_name')
-                ->toArray();
+            // Scope the cached filter options too
+            if ($isRegionalAdmin && $user->region_id) {
+                $regionId = (int) $user->region_id;
+                $clubIdsInRegion = Club::where('region_id', $regionId)->pluck('id')->toArray();
+                $memberIdsInRegion = Member::withTrashed()
+                    ->whereHas('club', fn ($q) => $q->where('region_id', $regionId))
+                    ->pluck('id')
+                    ->toArray();
+
+                $scopeFilter = function ($q) use ($user, $regionId, $clubIdsInRegion, $memberIdsInRegion) {
+                    $q->where('causer_id', $user->id)
+                      ->orWhere(function ($sq) use ($memberIdsInRegion) {
+                          if (!empty($memberIdsInRegion)) {
+                              $sq->whereIn('subject_id', $memberIdsInRegion)
+                                 ->where('subject_type', (new Member)->getMorphClass());
+                          }
+                      })->orWhere(function ($sq) use ($clubIdsInRegion) {
+                          if (!empty($clubIdsInRegion)) {
+                              $sq->whereIn('subject_id', $clubIdsInRegion)
+                                 ->where('subject_type', (new Club)->getMorphClass());
+                          }
+                      })->orWhere(function ($sq) use ($regionId) {
+                          $sq->where('subject_id', $regionId)
+                             ->where('subject_type', (new Region)->getMorphClass());
+                      })->orWhereJsonContains('properties->region_id', $regionId)
+                          ->orWhereJsonContains('properties->changes->region_id->old', (string) $regionId)
+                          ->orWhereJsonContains('properties->changes->region_id->new', (string) $regionId);
+
+                    foreach ($clubIdsInRegion as $cid) {
+                        $q->orWhereJsonContains('properties->club_id', $cid)
+                          ->orWhereJsonContains('properties->changes->club_id->old', (string) $cid)
+                          ->orWhereJsonContains('properties->changes->club_id->new', (string) $cid);
+                    }
+                };
+
+                $eventTypesQuery->where($scopeFilter);
+                $logNamesQuery->where($scopeFilter);
+            } elseif ($isClubAdmin && $user->club_id) {
+                $clubId = (int) $user->club_id;
+                $memberIdsInClub = Member::withTrashed()
+                    ->where('club_id', $clubId)
+                    ->pluck('id')
+                    ->toArray();
+
+                $scopeFilter = function ($q) use ($user, $clubId, $memberIdsInClub) {
+                    $q->where('causer_id', $user->id)
+                      ->orWhere(function ($sq) use ($memberIdsInClub) {
+                          if (!empty($memberIdsInClub)) {
+                              $sq->whereIn('subject_id', $memberIdsInClub)
+                                 ->where('subject_type', (new Member)->getMorphClass());
+                          }
+                      })->orWhere(function ($sq) use ($clubId) {
+                          $sq->where('subject_id', $clubId)
+                             ->where('subject_type', (new Club)->getMorphClass());
+                      })->orWhereJsonContains('properties->club_id', $clubId)
+                          ->orWhereJsonContains('properties->changes->club_id->old', (string) $clubId)
+                          ->orWhereJsonContains('properties->changes->club_id->new', (string) $clubId);
+                };
+
+                $eventTypesQuery->where($scopeFilter);
+                $logNamesQuery->where($scopeFilter);
+            }
+
+            $eventTypes = $eventTypesQuery->pluck('description')->toArray();
+            $logNames = $logNamesQuery->pluck('log_name')->toArray();
 
             return [$eventTypes, $logNames];
         });

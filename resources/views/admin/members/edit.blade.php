@@ -20,267 +20,274 @@
                     </div>
                 @endif
 
-                {{-- Main Member Update Form --}}
-                <form
-                    method="POST"
-                    action="{{ route('admin.members.update', $member) }}"
-                    enctype="multipart/form-data"
-                    x-data="{
-                        submitting: false,
-                        originalClubId: '{{ old('club_id', $member->club_id) }}',
-                        originalPositionId: '{{ old('position_id', $member->position_id) }}',
-                        originalFirstName: '{{ old('first_name', $member->first_name) }}',
-                        originalMiddleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
-                        originalLastName: '{{ old('last_name', $member->last_name) }}',
-                        originalSuffix: '{{ old('suffix', $member->suffix) }}',
-                        originalContactNumber: '{{ old('contact_number', $member->contact_number) }}',
-                        clubId: '{{ old('club_id', $member->club_id) }}',
-                        positionId: '{{ old('position_id', $member->position_id) }}',
-                        firstName: '{{ old('first_name', $member->first_name) }}',
-                        middleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
-                        lastName: '{{ old('last_name', $member->last_name) }}',
-                        suffix: '{{ old('suffix', $member->suffix) }}',
-                        contactNumber: '{{ old('contact_number', $member->contact_number) }}',
-                        get isDirty() {
-                            return this.firstName !== this.originalFirstName
-                                || this.lastName !== this.originalLastName
-                                || this.middleInitial !== this.originalMiddleInitial
-                                || this.suffix !== this.originalSuffix
-                                || this.contactNumber !== this.originalContactNumber
-                                || String(this.clubId) !== String(this.originalClubId)
-                                || String(this.positionId) !== String(this.originalPositionId);
-                        }
-                    }"
-                    @submit="submitting = true"
-                >
-                    @csrf
-                    @method('PUT')
-
-                    <div class="space-y-4">
-                        <div>
-                            <x-input-label for="club_id" :value="__('Club')" />
-                            @if($clubs->count() === 1)
-                                <p class="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
-                                    {{ $clubs->first()->name }}
-                                </p>
-                                <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}" x-model.number="clubId">
-                            @else
-                                <select
-                                    id="club_id"
-                                    name="club_id"
-                                    x-model.number="clubId"
-                                    required
-                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                >
-                                    <option value="">{{ __('Select club') }}</option>
-                                    @foreach($clubs as $club)
-                                        <option value="{{ $club->id }}">{{ $club->name }}</option>
-                                    @endforeach
-                                </select>
-                            @endif
-                            @error('club_id')
-                                <x-input-error class="mt-1" :messages="[$message]" />
-                            @enderror
+                {{-- Member Details Container --}}
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+                    <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/30 dark:to-transparent border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <div class="size-2 rounded-full bg-indigo-500"></div>
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-base">{{ __('Member Details') }}</h3>
                         </div>
+                    </div>
+                    <div class="p-6">
+                        <form
+                            method="POST"
+                            action="{{ route('admin.members.update', $member) }}"
+                            enctype="multipart/form-data"
+                            x-data="{
+                                submitting: false,
+                                originalClubId: '{{ old('club_id', $member->club_id) }}',
+                                originalPositionId: '{{ old('position_id', $member->position_id) }}',
+                                originalFirstName: '{{ old('first_name', $member->first_name) }}',
+                                originalMiddleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
+                                originalLastName: '{{ old('last_name', $member->last_name) }}',
+                                originalSuffix: '{{ old('suffix', $member->suffix) }}',
+                                originalContactNumber: '{{ old('contact_number', $member->contact_number) }}',
+                                clubId: '{{ old('club_id', $member->club_id) }}',
+                                positionId: '{{ old('position_id', $member->position_id) }}',
+                                firstName: '{{ old('first_name', $member->first_name) }}',
+                                middleInitial: '{{ old('middle_initial', $member->middle_initial) }}',
+                                lastName: '{{ old('last_name', $member->last_name) }}',
+                                suffix: '{{ old('suffix', $member->suffix) }}',
+                                contactNumber: '{{ old('contact_number', $member->contact_number) }}',
+                                get isDirty() {
+                                    return this.firstName !== this.originalFirstName
+                                        || this.lastName !== this.originalLastName
+                                        || this.middleInitial !== this.originalMiddleInitial
+                                        || this.suffix !== this.originalSuffix
+                                        || this.contactNumber !== this.originalContactNumber
+                                        || String(this.clubId) !== String(this.originalClubId)
+                                        || String(this.positionId) !== String(this.originalPositionId);
+                                }
+                            }"
+                            @submit="submitting = true"
+                        >
+                            @csrf
+                            @method('PUT')
 
-                        <div>
-                            <x-input-label for="position_id" :value="__('Position')" />
-                            <select
-                                id="position_id"
-                                name="position_id"
-                                x-model.number="positionId"
-                                required
-                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            >
-                                <option value="">{{ __('Select position') }}</option>
-                                @foreach($positions as $position)
-                                    <option value="{{ $position->id }}">{{ $position->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('position_id')
-                                <x-input-error class="mt-1" :messages="[$message]" />
-                            @enderror
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                            <div class="sm:col-span-2">
-                                <x-input-label for="first_name" :value="__('First Name')" />
-                                <input
-                                    id="first_name"
-                                    name="first_name"
-                                    type="text"
-                                    x-model="firstName"
-                                    required
-                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                />
-                                @error('first_name')
-                                    <x-input-error class="mt-1" :messages="[$message]" />
-                                @enderror
-                            </div>
-
-                            <div>
-                                <x-input-label for="middle_initial" :value="__('M.I.')" />
-                                <input
-                                    id="middle_initial"
-                                    name="middle_initial"
-                                    type="text"
-                                    x-model="middleInitial"
-                                    maxlength="10"
-                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    placeholder="{{ __('(opt)') }}"
-                                />
-                                @error('middle_initial')
-                                    <x-input-error class="mt-1" :messages="[$message]" />
-                                @enderror
-                            </div>
-
-                            <div>
-                                <x-input-label for="suffix" :value="__('Suffix')" />
-                                <input
-                                    id="suffix"
-                                    name="suffix"
-                                    type="text"
-                                    x-model="suffix"
-                                    maxlength="50"
-                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    placeholder="{{ __('Jr., III, etc.') }}"
-                                />
-                                @error('suffix')
-                                    <x-input-error class="mt-1" :messages="[$message]" />
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <x-input-label for="last_name" :value="__('Last Name')" />
-                                <input
-                                    id="last_name"
-                                    name="last_name"
-                                    type="text"
-                                    x-model="lastName"
-                                    required
-                                    class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                />
-                                @error('last_name')
-                                    <x-input-error class="mt-1" :messages="[$message]" />
-                                @enderror
-                            </div>
-
-                            <div>
-                                <x-input-label :value="__('Status')" />
-                                @php
-                                    $currentYear = (int) now()->year;
-                                    $autoStatus = $member->hasPaidForYear($currentYear) ? 'active' : 'inactive';
-                                @endphp
-                                <div class="mt-2">
-                                    @if($autoStatus === 'active')
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-sm font-semibold text-green-700 dark:text-green-400">
-                                            <span class="size-2 rounded-full bg-green-500"></span>
-                                            {{ __('Active — Paid for :year', ['year' => $currentYear]) }}
-                                        </span>
+                            <div class="space-y-4">
+                                <div>
+                                    <x-input-label for="club_id" :value="__('Club')" />
+                                    @if($clubs->count() === 1)
+                                        <p class="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                            {{ $clubs->first()->name }}
+                                        </p>
+                                        <input type="hidden" name="club_id" value="{{ $clubs->first()->id }}" x-model.number="clubId">
                                     @else
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 dark:text-gray-400">
-                                            <span class="size-2 rounded-full bg-gray-400"></span>
-                                            {{ __('Inactive — No payment for :year', ['year' => $currentYear]) }}
-                                        </span>
+                                        <select
+                                            id="club_id"
+                                            name="club_id"
+                                            x-model.number="clubId"
+                                            required
+                                            class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        >
+                                            <option value="">{{ __('Select club') }}</option>
+                                            @foreach($clubs as $club)
+                                                <option value="{{ $club->id }}">{{ $club->name }}</option>
+                                            @endforeach
+                                        </select>
                                     @endif
-                                    <p class="mt-1 text-xs text-gray-400">{{ __('Status is auto-managed based on yearly payment.') }}</p>
+                                    @error('club_id')
+                                        <x-input-error class="mt-1" :messages="[$message]" />
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <x-input-label for="position_id" :value="__('Position')" />
+                                    <select
+                                        id="position_id"
+                                        name="position_id"
+                                        x-model.number="positionId"
+                                        required
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    >
+                                        <option value="">{{ __('Select position') }}</option>
+                                        @foreach($positions as $position)
+                                            <option value="{{ $position->id }}">{{ $position->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('position_id')
+                                        <x-input-error class="mt-1" :messages="[$message]" />
+                                    @enderror
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                    <div class="sm:col-span-2">
+                                        <x-input-label for="first_name" :value="__('First Name')" />
+                                        <input
+                                            id="first_name"
+                                            name="first_name"
+                                            type="text"
+                                            x-model="firstName"
+                                            required
+                                            class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        />
+                                        @error('first_name')
+                                            <x-input-error class="mt-1" :messages="[$message]" />
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <x-input-label for="middle_initial" :value="__('M.I.')" />
+                                        <input
+                                            id="middle_initial"
+                                            name="middle_initial"
+                                            type="text"
+                                            x-model="middleInitial"
+                                            maxlength="10"
+                                            class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            placeholder="{{ __('(opt)') }}"
+                                        />
+                                        @error('middle_initial')
+                                            <x-input-error class="mt-1" :messages="[$message]" />
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <x-input-label for="suffix" :value="__('Suffix')" />
+                                        <input
+                                            id="suffix"
+                                            name="suffix"
+                                            type="text"
+                                            x-model="suffix"
+                                            maxlength="50"
+                                            class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            placeholder="{{ __('Jr., III, etc.') }}"
+                                        />
+                                        @error('suffix')
+                                            <x-input-error class="mt-1" :messages="[$message]" />
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <x-input-label for="last_name" :value="__('Last Name')" />
+                                        <input
+                                            id="last_name"
+                                            name="last_name"
+                                            type="text"
+                                            x-model="lastName"
+                                            required
+                                            class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        />
+                                        @error('last_name')
+                                            <x-input-error class="mt-1" :messages="[$message]" />
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <x-input-label :value="__('Status')" />
+                                        @php
+                                            $currentYear = (int) now()->year;
+                                            $autoStatus = $member->hasPaidForYear($currentYear) ? 'active' : 'inactive';
+                                        @endphp
+                                        <div class="mt-2">
+                                            @if($autoStatus === 'active')
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-sm font-semibold text-green-700 dark:text-green-400">
+                                                    <span class="size-2 rounded-full bg-green-500"></span>
+                                                    {{ __('Active — Paid for :year', ['year' => $currentYear]) }}
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                                                    <span class="size-2 rounded-full bg-gray-400"></span>
+                                                    {{ __('Inactive — No payment for :year', ['year' => $currentYear]) }}
+                                                </span>
+                                            @endif
+                                            <p class="mt-1 text-xs text-gray-400">{{ __('Status is auto-managed based on yearly payment.') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <x-input-label for="contact_number" :value="__('Contact Number')" />
+                                    <input
+                                        id="contact_number"
+                                        name="contact_number"
+                                        type="text"
+                                        x-model="contactNumber"
+                                        required
+                                        class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
+                                    @error('contact_number')
+                                        <x-input-error class="mt-1" :messages="[$message]" />
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <x-input-label for="profile_picture" :value="__('Profile Picture')" />
+
+                                    @if($member->profile_picture_url)
+                                        <div class="mb-2 flex items-start gap-3">
+                                            <img
+                                                src="{{ $member->profile_picture_url }}"
+                                                alt="{{ $member->name }}"
+                                                class="size-20 rounded-lg object-cover border border-gray-200 shadow-sm"
+                                            >
+                                            <label class="inline-flex items-center gap-2 mt-1 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    name="remove_photo"
+                                                    value="1"
+                                                    class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
+                                                >
+                                                <span class="text-sm text-red-600 font-medium">{{ __('Remove photo') }}</span>
+                                            </label>
+                                        </div>
+                                    @endif
+
+                                    <input
+                                        id="profile_picture"
+                                        name="profile_picture"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/jpg,image/gif,image.webp"
+                                        class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
+                                    />
+                                    <p class="mt-1 text-xs text-gray-500">{{ __('Optional. Leave empty to keep current. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
+                                    @error('profile_picture')
+                                        <x-input-error class="mt-1" :messages="[$message]" />
+                                    @enderror
+                                </div>
+
+                                {{-- Update & Cancel Buttons --}}
+                                <div class="flex items-center gap-3 pt-2">
+                                    <button
+                                        type="submit"
+                                        x-bind:disabled="!isDirty || submitting"
+                                        x-bind:class="!isDirty || submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700'"
+                                        class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                    >
+                                        <span x-show="!submitting">{{ __('Update') }}</span>
+                                        <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                            <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                            <span>{{ __('Saving...') }}</span>
+                                        </span>
+                                    </button>
+
+                                    <a
+                                        href="{{ route('admin.members.index') }}"
+                                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
+                                    >
+                                        {{ __('Cancel') }}
+                                    </a>
                                 </div>
                             </div>
-                        </div>
-
-                        <div>
-                            <x-input-label for="contact_number" :value="__('Contact Number')" />
-                            <input
-                                id="contact_number"
-                                name="contact_number"
-                                type="text"
-                                x-model="contactNumber"
-                                required
-                                class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            />
-                            @error('contact_number')
-                                <x-input-error class="mt-1" :messages="[$message]" />
-                            @enderror
-                        </div>
-
-                        <div>
-                            <x-input-label for="profile_picture" :value="__('Profile Picture')" />
-
-                            @if($member->profile_picture_url)
-                                <div class="mb-2 flex items-start gap-3">
-                                    <img
-                                        src="{{ $member->profile_picture_url }}"
-                                        alt="{{ $member->name }}"
-                                        class="size-20 rounded-lg object-cover border border-gray-200 shadow-sm"
-                                    >
-                                    <label class="inline-flex items-center gap-2 mt-1 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="remove_photo"
-                                            value="1"
-                                            class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
-                                        >
-                                        <span class="text-sm text-red-600 font-medium">{{ __('Remove photo') }}</span>
-                                    </label>
-                                </div>
-                            @endif
-
-                            <input
-                                id="profile_picture"
-                                name="profile_picture"
-                                type="file"
-                                accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-                                class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">{{ __('Optional. Leave empty to keep current. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
-                            @error('profile_picture')
-                                <x-input-error class="mt-1" :messages="[$message]" />
-                            @enderror
-                        </div>
-
-                        {{-- Update & Cancel Buttons (moved BEFORE certificates) --}}
-                        <div class="flex items-center gap-3 pt-2">
-                            <button
-                                type="submit"
-                                x-bind:disabled="!isDirty || submitting"
-                                x-bind:class="!isDirty || submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700'"
-                                class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                            >
-                                <span x-show="!submitting">{{ __('Update') }}</span>
-                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
-                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                    </svg>
-                                    <span>{{ __('Saving...') }}</span>
-                                </span>
-                            </button>
-
-                            <a
-                                href="{{ route('admin.members.index') }}"
-                                class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
-                            >
-                                {{ __('Cancel') }}
-                            </a>
-                        </div>
+                        </form>
                     </div>
-                </form>
+                </div>
 
-                {{-- Certificates Section (independent inline CRUD, outside main form) --}}
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                <svg class="size-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                                {{ __('Certificates') }}
-                            </h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Add, edit, or remove certificates, awards, and recognitions.') }}</p>
+                {{-- Certificates Container --}}
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+                    <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-950/30 dark:to-transparent border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <div class="size-2 rounded-full bg-amber-500"></div>
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-base">{{ __('Certificates') }}</h3>
                         </div>
+                        <p class="text-sm text-gray-500 mt-1 ml-4">{{ __('Add, edit, or remove certificates, awards, and recognitions.') }}</p>
                     </div>
+                    <div class="p-6">
 
                     {{-- Add Certificate Form --}}
                     <div
@@ -545,26 +552,26 @@
                         <p class="text-sm text-gray-400 dark:text-gray-500 italic mb-4">{{ __('No certificates added yet.') }}</p>
                     @endif
                 </div>
+                </div>
 
-                {{-- Payments Section (independent inline CRUD, outside main form) --}}
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <div>
-                            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                                <svg class="size-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                {{ __('Payments') }}
-                            </h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Record and manage yearly membership payments.') }}</p>
+                {{-- Payments Container --}}
+                <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+                    <div class="px-6 py-4 bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/30 dark:to-transparent border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="size-2 rounded-full bg-green-500"></div>
+                                <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-base">{{ __('Payments') }}</h3>
+                            </div>
+                            <a
+                                href="{{ route('admin.payments.index', ['q' => $member->name]) }}"
+                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                                {{ __('View All Payments') }}
+                            </a>
                         </div>
-                        <a
-                            href="{{ route('admin.payments.index', ['q' => $member->name]) }}"
-                            class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                        >
-                            {{ __('View All Payments') }}
-                        </a>
+                        <p class="text-sm text-gray-500 mt-1 ml-4">{{ __('Record and manage yearly membership payments.') }}</p>
                     </div>
+                    <div class="p-6">
 
                     @php
                         $currentYear = (int) now()->year;
@@ -822,6 +829,7 @@
                             <x-input-error class="mt-1" :messages="[$message]" />
                         @enderror
                     </div>
+                </div>
                 </div>
             </x-card>
         </div>
