@@ -423,15 +423,13 @@
                         Start one of our programs today and help people in need. Take the first step toward a lifetime of service, brotherhood, and leadership.
                     </p>
 
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-2 px-10 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-bold text-lg transition-all hover:shadow-xl hover:shadow-amber-500/25 cursor-pointer"
-                    >
-                        Apply Now
-                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                        </svg>
-                    </button>
+                    <div class="max-w-lg mx-auto text-center">
+                        <p class="text-gray-400 leading-relaxed">
+                            The path to becoming an Eagle begins with a letter of intent. 
+                            Reach out to a member of your local Eagles club — they'll point you 
+                            to the right person to start your journey.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
