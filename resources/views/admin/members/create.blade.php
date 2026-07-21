@@ -23,29 +23,23 @@
                 <form method="POST" action="{{ route('admin.members.store') }}" enctype="multipart/form-data"
                       x-data="{
                         submitting: false,
-                        showNoPaymentWarning: false,
                         payments: [],
+                        firstName: '{{ old('first_name') }}',
+                        lastName: '{{ old('last_name') }}',
+                        contactNumber: '{{ old('contact_number') }}',
+                        get allRequiredFilled() {
+                            return this.firstName.trim() !== ''
+                                && this.lastName.trim() !== ''
+                                && this.contactNumber.trim() !== '';
+                        },
                         addPayment() {
                             this.payments.push({ year_paid: {{ (int) now()->year }}, date_paid: '{{ now()->format('Y-m-d') }}' });
                         },
                         removePayment(index) {
                             this.payments.splice(index, 1);
-                        },
-                        confirmSubmit() {
-                            if (this.payments.length === 0) {
-                                this.showNoPaymentWarning = true;
-                            } else {
-                                this.submitting = true;
-                                this.$el.submit();
-                            }
-                        },
-                        proceedWithoutPayment() {
-                            this.showNoPaymentWarning = false;
-                            this.submitting = true;
-                            this.$el.submit();
                         }
                       }"
-                      @submit.prevent="confirmSubmit()">
+                      @submit="submitting = true">
                     @csrf
 
                     {{-- Member Details Container --}}
@@ -111,7 +105,7 @@
                                         id="first_name"
                                         name="first_name"
                                         type="text"
-                                        value="{{ old('first_name') }}"
+                                        x-model="firstName"
                                         required
                                         class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
@@ -154,30 +148,28 @@
                             </div>
 
                             <div>
-                                <x-input-label for="last_name" :value="__('Last Name')" />
-                                <input
-                                    id="last_name"
-                                    name="last_name"
-                                    type="text"
-                                    value="{{ old('last_name') }}"
-                                    required
-                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                />
+                                <x-input-label for="last_name" :value="__('Last Name')" />                                    <input
+                                        id="last_name"
+                                        name="last_name"
+                                        type="text"
+                                        x-model="lastName"
+                                        required
+                                        class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
                                 @error('last_name')
                                     <x-input-error class="mt-1" :messages="[$message]" />
                                 @enderror
                             </div>
 
                             <div>
-                                <x-input-label for="contact_number" :value="__('Contact Number')" />
-                                <input
-                                    id="contact_number"
-                                    name="contact_number"
-                                    type="text"
-                                    value="{{ old('contact_number') }}"
-                                    required
-                                    class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                />
+                                <x-input-label for="contact_number" :value="__('Contact Number')" />                                    <input
+                                        id="contact_number"
+                                        name="contact_number"
+                                        type="text"
+                                        x-model="contactNumber"
+                                        required
+                                        class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    />
                                 @error('contact_number')
                                     <x-input-error class="mt-1" :messages="[$message]" />
                                 @enderror
@@ -368,78 +360,41 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="flex items-center gap-3 pt-2">
-                        <button
-                            type="submit"
-                            :disabled="submitting"
-                            class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                        >
-                            <span x-show="!submitting">{{ __('Save') }}</span>
-                            <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
-                                <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                </svg>
-                                <span>{{ __('Saving...') }}</span>
-                            </span>
-                        </button>
+                    <div class="flex flex-col gap-3 pt-2">
+                        <div class="flex items-center gap-3">
+                            <button
+                                type="submit"
+                                :disabled="!allRequiredFilled || submitting"
+                                :class="!allRequiredFilled || submitting
+                                    ? 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white opacity-50 cursor-not-allowed'
+                                    : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
+                                "
+                            >
+                                <span x-show="!submitting">{{ __('Save') }}</span>
+                                <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                                    <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    <span>{{ __('Saving...') }}</span>
+                                </span>
+                            </button>
 
-                        <a
-                            href="{{ route('admin.members.index') }}"
-                            class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
-                        >
-                            {{ __('Cancel') }}
-                        </a>
+                            <a
+                                href="{{ route('admin.members.index') }}"
+                                class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
+                            >
+                                {{ __('Cancel') }}
+                            </a>
+                        </div>
+                        <p class="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
+                            <svg class="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ __('If no payment is recorded for the current year, the member will be marked as Inactive. Payments can be added later.') }}
+                        </p>
                     </div>
                 </form>
-
-                {{-- No Payment Warning Modal --}}
-                <template x-teleport="body">
-                    <div
-                        x-show="showNoPaymentWarning"
-                        x-transition.opacity.duration.200ms
-                        class="fixed inset-0 z-50 flex items-center justify-center"
-                        @keydown.escape.window="showNoPaymentWarning = false"
-                    >
-                        <div class="absolute inset-0 bg-black/40" @click="showNoPaymentWarning = false"></div>
-                        <div class="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden" @click.stop>
-                            <div class="px-6 pt-5 pb-4">
-                                <div class="flex items-start gap-4">
-                                    <div class="shrink-0 size-10 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
-                                        <svg class="size-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ __('No Payment Recorded') }}</h3>
-                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                                            {{ __("You haven't added any payments for this member. The member will be created with an 'Inactive' status until a payment is recorded.") }}
-                                        </p>
-                                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                                            {{ __('Would you like to continue anyway?') }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="px-6 pb-5 pt-3 flex items-center justify-end gap-2 border-t border-gray-100 dark:border-gray-700">
-                                <button
-                                    type="button"
-                                    @click="showNoPaymentWarning = false"
-                                    class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition"
-                                >
-                                    {{ __('Add Payment') }}
-                                </button>
-                                <button
-                                    type="button"
-                                    @click="proceedWithoutPayment"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent rounded-lg text-sm font-semibold text-white bg-amber-600 hover:bg-amber-500 transition"
-                                >
-                                    {{ __('Save Without Payment') }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </template>
             </x-card>
         </div>
     </div>

@@ -8,6 +8,19 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <x-card title="Update Member">
+                <x-slot name="actions">
+                    <a
+                        href="{{ route('member.profile', $member->slug) }}"
+                        target="_blank"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-600 transition"
+                    >
+                        <svg class="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        {{ __('View Profile') }}
+                    </a>
+                </x-slot>
                 @if ($errors->any())
                     <div class="mb-4">
                         <x-alert type="danger">
@@ -30,6 +43,7 @@
                     </div>
                     <div class="p-6">
                         <form
+                            id="member-edit-form"
                             method="POST"
                             action="{{ route('admin.members.update', $member) }}"
                             enctype="multipart/form-data"
@@ -57,6 +71,14 @@
                                         || this.contactNumber !== this.originalContactNumber
                                         || String(this.clubId) !== String(this.originalClubId)
                                         || String(this.positionId) !== String(this.originalPositionId);
+                                },
+                                init() {
+                                    this.$watch('isDirty', (val) => {
+                                        window.dispatchEvent(new CustomEvent('member-dirty-changed', { detail: { isDirty: val } }));
+                                    });
+                                    this.$watch('submitting', (val) => {
+                                        window.dispatchEvent(new CustomEvent('member-submitting-changed', { detail: { submitting: val } }));
+                                    });
                                 }
                             }"
                             @submit="submitting = true"
@@ -248,31 +270,6 @@
                                     @enderror
                                 </div>
 
-                                {{-- Update & Cancel Buttons --}}
-                                <div class="flex items-center gap-3 pt-2">
-                                    <button
-                                        type="submit"
-                                        x-bind:disabled="!isDirty || submitting"
-                                        x-bind:class="!isDirty || submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700'"
-                                        class="inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                    >
-                                        <span x-show="!submitting">{{ __('Update') }}</span>
-                                        <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
-                                            <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                            </svg>
-                                            <span>{{ __('Saving...') }}</span>
-                                        </span>
-                                    </button>
-
-                                    <a
-                                        href="{{ route('admin.members.index') }}"
-                                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
-                                    >
-                                        {{ __('Cancel') }}
-                                    </a>
-                                </div>
                             </div>
                         </form>
                     </div>
@@ -830,6 +827,39 @@
                         @enderror
                     </div>
                 </div>
+                </div>
+                {{-- Update & Cancel Buttons --}}
+                <div
+                    x-data="{ isDirty: false, submitting: false }"
+                    @member-dirty-changed.window="isDirty = $event.detail.isDirty"
+                    @member-submitting-changed.window="submitting = $event.detail.submitting"
+                    class="flex items-center gap-3 pt-2"
+                >
+                    <button
+                        type="submit"
+                        form="member-edit-form"
+                        :disabled="!isDirty || submitting"
+                        :class="!isDirty || submitting
+                            ? 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white opacity-50 cursor-not-allowed'
+                            : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
+                        "
+                    >
+                        <span x-show="!submitting">{{ __('Update') }}</span>
+                        <span x-show="submitting" x-cloak class="inline-flex items-center gap-2">
+                            <svg class="size-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span>{{ __('Saving...') }}</span>
+                        </span>
+                    </button>
+
+                    <a
+                        href="{{ route('admin.members.index') }}"
+                        class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
+                    >
+                        {{ __('Cancel') }}
+                    </a>
                 </div>
             </x-card>
         </div>

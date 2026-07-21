@@ -810,6 +810,9 @@ class MemberController extends Controller
                         ]);
                     }
                 }
+
+                // Re-evaluate status — if current year is among paid years, mark as active
+                $member->updateStatusFromPayments();
             }
 
             $imported++;
