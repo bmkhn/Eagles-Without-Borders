@@ -585,13 +585,21 @@ class MemberController extends Controller
             $colMap[$name] = $i;
         }
 
-        // ── Pre-read: collect all club names used in CSV for scope validation ──
-        $csvClubNames = [];
+        // ── Read all rows into memory once ────────────────────────────────
+        $allRows = [];
         while (($row = fgetcsv($handle)) !== false) {
             $row = array_map('trim', $row);
+            // Skip empty rows
             if (count($row) < 3 || (implode('', $row) === '')) {
                 continue;
             }
+            $allRows[] = $row;
+        }
+        fclose($handle);
+
+        // ── Collect club names from all rows for scope validation ────────
+        $csvClubNames = [];
+        foreach ($allRows as $row) {
             $clubName = $row[$colMap['club']] ?? '';
             if (!empty($clubName) && !in_array($clubName, $csvClubNames)) {
                 $csvClubNames[] = $clubName;
@@ -602,10 +610,8 @@ class MemberController extends Controller
         if ($isClubAdmin) {
             $userClub = Club::find($user->club_id);
             $userClubName = $userClub?->name;
-            // Check all referenced clubs match the admin's club
             foreach ($csvClubNames as $csvClubName) {
                 if ($csvClubName !== $userClubName) {
-                    fclose($handle);
                     return redirect()
                         ->route('admin.members.index')
                         ->with('error', "Club admins can only import members into their own club ('{$userClubName}'). The CSV references '{$csvClubName}'.");
@@ -618,22 +624,12 @@ class MemberController extends Controller
             $regionClubNames = Club::where('region_id', $user->region_id)->pluck('name')->all();
             foreach ($csvClubNames as $csvClubName) {
                 if (!in_array($csvClubName, $regionClubNames)) {
-                    fclose($handle);
                     return redirect()
                         ->route('admin.members.index')
                         ->with('error', "Regional admins can only import members into clubs within their region ('{$userRegion?->name}'). The CSV references '{$csvClubName}' which is not in your region.");
                 }
             }
         }
-
-        // ── Rewind file for processing ─────────────────────────────────────
-        rewind($handle);
-        // Skip BOM + header again
-        $bomCheck = fread($handle, 3);
-        if ($bomCheck !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-        fgetcsv($handle); // skip header
 
         // ── Process rows ───────────────────────────────────────
         $imported = 0;
@@ -643,15 +639,8 @@ class MemberController extends Controller
 
         $nationalPresidentPosition = Position::where('name', 'National President')->first();
 
-        while (($row = fgetcsv($handle)) !== false) {
+        foreach ($allRows as $row) {
             $rowNumber++;
-
-            $row = array_map('trim', $row);
-
-            // Skip empty rows
-            if (count($row) < 3 || (implode('', $row) === '')) {
-                continue;
-            }
 
             $firstName = $row[$colMap['first_name']] ?? '';
             $middleInitial = $row[$colMap['m.i.']] ?? '';
@@ -824,8 +813,6 @@ class MemberController extends Controller
                 ->withProperties(['source' => 'csv_import'])
                 ->log('created');
         }
-
-        fclose($handle);
 
         // ── Log the import batch ───────────────────────────────
         activity()

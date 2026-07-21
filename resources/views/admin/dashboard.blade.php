@@ -23,43 +23,69 @@
                 $isClubAdmin = $user?->hasRole('club-admin');
                 $isNationLevel = $isSuperAdmin || $isNationalAdmin;
 
+                $cacheKey = 'dashboard_' . ($user?->id ?? 0);
+
                 if ($isNationLevel) {
-                    $regionCount = \App\Models\Region::count();
-                    $clubCount = \App\Models\Club::count();
-                    $positionCount = \App\Models\Position::count();
-                    $memberCount = \App\Models\Member::count();
+                    $stats = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_nat_stats', 60, function () {
+                        $regionCount = \App\Models\Region::count();
+                        $clubCount = \App\Models\Club::count();
+                        $positionCount = \App\Models\Position::count();
+                        $memberCount = \App\Models\Member::count();
 
-                    $clubsWithStatus = \App\Models\Club::with('region')
-                        ->withCount([
-                            'members as active_count' => fn($q) => $q->where('status', 'active'),
-                            'members as inactive_count' => fn($q) => $q->where('status', 'inactive'),
-                        ])
-                        ->orderBy('name')
-                        ->get()
-                        ->groupBy(fn($c) => $c->region?->name ?? 'Unassigned');
+                        return compact('regionCount', 'clubCount', 'positionCount', 'memberCount');
+                    });
 
-                    $positionsAll = \App\Models\Member::query()
-                        ->select('position_id')
-                        ->selectRaw('COUNT(*) as count')
-                        ->with('position')
-                        ->groupBy('position_id')
-                        ->get()
-                        ->map(fn($m) => [
-                            'id' => $m->position_id,
-                            'name' => $m->position?->name ?? 'Unassigned',
-                            'count' => (int) $m->count,
-                        ])
-                        ->sortByDesc('count');
+                    extract($stats);
+
+                    $clubsWithStatus = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_club_status', 60, function () {
+                        return \App\Models\Club::with('region')
+                            ->withCount([
+                                'members as active_count' => fn($q) => $q->where('status', 'active'),
+                                'members as inactive_count' => fn($q) => $q->where('status', 'inactive'),
+                            ])
+                            ->orderBy('name')
+                            ->get()
+                            ->groupBy(fn($c) => $c->region?->name ?? 'Unassigned');
+                    });
+
+                    $positionsAll = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_positions', 60, function () {
+                        return \App\Models\Member::query()
+                            ->select('position_id')
+                            ->selectRaw('COUNT(*) as count')
+                            ->with('position')
+                            ->groupBy('position_id')
+                            ->get()
+                            ->map(fn($m) => [
+                                'id' => $m->position_id,
+                                'name' => $m->position?->name ?? 'Unassigned',
+                                'count' => (int) $m->count,
+                            ])
+                            ->sortByDesc('count');
+                    });
                 } elseif ($isRegionalAdmin) {
-                    // Regional admin: scoped to their region
-                    $region = $user->region_id ? \App\Models\Region::find($user->region_id) : null;
-                    $regionClubIds = $region?->clubs()->pluck('id') ?? collect();
-                    $clubCount = $regionClubIds->count();
-                    $memberCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->count();
+                    $regionData = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_re_data', 60, function () use ($user) {
+                        $region = $user->region_id ? \App\Models\Region::find($user->region_id) : null;
+                        $regionClubIds = $region?->clubs()->pluck('id') ?? collect();
+                        $clubCount = $regionClubIds->count();
+                        $memberCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->count();
+
+                        return compact('region', 'regionClubIds', 'clubCount', 'memberCount');
+                    });
+
+                    $region = $regionData['region'];
+                    $regionClubIds = $regionData['regionClubIds'];
+                    $clubCount = $regionData['clubCount'];
+                    $memberCount = $regionData['memberCount'];
                 } else {
-                    // Club admin: scoped to their club
-                    $clubId = $user->club_id;
-                    $memberCount = $clubId ? \App\Models\Member::where('club_id', $clubId)->count() : 0;
+                    $clubData = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ca_data', 60, function () use ($user) {
+                        $clubId = $user->club_id;
+                        $memberCount = $clubId ? \App\Models\Member::where('club_id', $clubId)->count() : 0;
+
+                        return compact('clubId', 'memberCount');
+                    });
+
+                    $clubId = $clubData['clubId'];
+                    $memberCount = $clubData['memberCount'];
                 }
             @endphp
 
@@ -132,7 +158,9 @@
                 </div>
             @elseif($isRegionalAdmin)
                 @php
-                    $region = $user->region_id ? \App\Models\Region::withCount('clubs')->find($user->region_id) : null;
+                    if (!isset($region)) {
+                        $region = $user->region_id ? \App\Models\Region::withCount('clubs')->find($user->region_id) : null;
+                    }
                 @endphp
 
                 @if($region)
@@ -151,7 +179,7 @@
                                     </div>
                                     <div class="ml-auto text-right">
                                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('Clubs') }}</p>
-                                        <p class="text-3xl font-black text-gray-900 dark:text-gray-100">{{ $region->clubs_count }}</p>
+                                        <p class="text-3xl font-black text-gray-900 dark:text-gray-100">{{ $region->clubs_count ?? $clubCount }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -274,25 +302,32 @@
                 @endif
             @elseif($isRegionalAdmin && isset($region) && $region)
                 @php
-                    $regionClubIds = $region->clubs()->pluck('id');
-                    $activeCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->where('status', 'active')->count();
-                    $inactiveCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->where('status', 'inactive')->count();
-                    $regionTotal = $activeCount + $inactiveCount;
-                    $regionActivePct = $regionTotal > 0 ? round(($activeCount / $regionTotal) * 100) : 0;
-                    $regionInactivePct = $regionTotal > 0 ? round(($inactiveCount / $regionTotal) * 100) : 0;
+                    $regionClubIds = $regionData['regionClubIds'] ?? $region->clubs()->pluck('id');
 
-                    $raPositions = \App\Models\Member::whereIn('club_id', $regionClubIds)
-                        ->select('position_id')
-                        ->selectRaw('COUNT(*) as count')
-                        ->with('position')
-                        ->groupBy('position_id')
-                        ->get()
-                        ->map(fn($m) => [
-                            'id' => $m->position_id,
-                            'name' => $m->position?->name ?? 'Unassigned',
-                            'count' => (int) $m->count,
-                        ])
-                        ->sortByDesc('count');
+                    $raStats = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ra_stats', 60, function () use ($regionClubIds) {
+                        $activeCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->where('status', 'active')->count();
+                        $inactiveCount = \App\Models\Member::whereIn('club_id', $regionClubIds)->where('status', 'inactive')->count();
+                        $regionTotal = $activeCount + $inactiveCount;
+                        $regionActivePct = $regionTotal > 0 ? round(($activeCount / $regionTotal) * 100) : 0;
+                        $regionInactivePct = $regionTotal > 0 ? round(($inactiveCount / $regionTotal) * 100) : 0;
+
+                        $raPositions = \App\Models\Member::whereIn('club_id', $regionClubIds)
+                            ->select('position_id')
+                            ->selectRaw('COUNT(*) as count')
+                            ->with('position')
+                            ->groupBy('position_id')
+                            ->get()
+                            ->map(fn($m) => [
+                                'id' => $m->position_id,
+                                'name' => $m->position?->name ?? 'Unassigned',
+                                'count' => (int) $m->count,
+                            ])
+                            ->sortByDesc('count');
+
+                        return compact('activeCount', 'inactiveCount', 'regionTotal', 'regionActivePct', 'regionInactivePct', 'raPositions');
+                    });
+
+                    extract($raStats);
                 @endphp
 
                 <div class="mb-8">
@@ -357,24 +392,30 @@
                 @endif
             @elseif($isClubAdmin && isset($club) && $club)
                 @php
-                    $activeCount = \App\Models\Member::where('club_id', $club->id)->where('status', 'active')->count();
-                    $inactiveCount = \App\Models\Member::where('club_id', $club->id)->where('status', 'inactive')->count();
-                    $clubTotal = $activeCount + $inactiveCount;
-                    $clubActivePct = $clubTotal > 0 ? round(($activeCount / $clubTotal) * 100) : 0;
-                    $clubInactivePct = $clubTotal > 0 ? round(($inactiveCount / $clubTotal) * 100) : 0;
+                    $caStats = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ca_stats', 60, function () use ($club) {
+                        $activeCount = \App\Models\Member::where('club_id', $club->id)->where('status', 'active')->count();
+                        $inactiveCount = \App\Models\Member::where('club_id', $club->id)->where('status', 'inactive')->count();
+                        $clubTotal = $activeCount + $inactiveCount;
+                        $clubActivePct = $clubTotal > 0 ? round(($activeCount / $clubTotal) * 100) : 0;
+                        $clubInactivePct = $clubTotal > 0 ? round(($inactiveCount / $clubTotal) * 100) : 0;
 
-                    $cpPositions = \App\Models\Member::where('club_id', $club->id)
-                        ->select('position_id')
-                        ->selectRaw('COUNT(*) as count')
-                        ->with('position')
-                        ->groupBy('position_id')
-                        ->get()
-                        ->map(fn($m) => [
-                            'id' => $m->position_id,
-                            'name' => $m->position?->name ?? 'Unassigned',
-                            'count' => (int) $m->count,
-                        ])
-                        ->sortByDesc('count');
+                        $cpPositions = \App\Models\Member::where('club_id', $club->id)
+                            ->select('position_id')
+                            ->selectRaw('COUNT(*) as count')
+                            ->with('position')
+                            ->groupBy('position_id')
+                            ->get()
+                            ->map(fn($m) => [
+                                'id' => $m->position_id,
+                                'name' => $m->position?->name ?? 'Unassigned',
+                                'count' => (int) $m->count,
+                            ])
+                            ->sortByDesc('count');
+
+                        return compact('activeCount', 'inactiveCount', 'clubTotal', 'clubActivePct', 'clubInactivePct', 'cpPositions');
+                    });
+
+                    extract($caStats);
                 @endphp
 
                 <div class="mb-8">
@@ -579,16 +620,18 @@
 
             <!-- Recent Members -->
             @php
-                $recentMembersQuery = \App\Models\Member::with(['club', 'position']);
+                $recentMembers = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_recent', 60, function () use ($user, $isClubAdmin, $isRegionalAdmin) {
+                    $query = \App\Models\Member::with(['club', 'position']);
 
-                if ($isClubAdmin && $user->club_id) {
-                    $recentMembersQuery->where('club_id', $user->club_id);
-                } elseif ($isRegionalAdmin && $user->region_id) {
-                    $regionClubIds = \App\Models\Club::where('region_id', $user->region_id)->pluck('id');
-                    $recentMembersQuery->whereIn('club_id', $regionClubIds);
-                }
+                    if ($isClubAdmin && $user->club_id) {
+                        $query->where('club_id', $user->club_id);
+                    } elseif ($isRegionalAdmin && $user->region_id) {
+                        $clubIds = \App\Models\Club::where('region_id', $user->region_id)->pluck('id');
+                        $query->whereIn('club_id', $clubIds);
+                    }
 
-                $recentMembers = $recentMembersQuery->latest()->take(5)->get();
+                    return $query->latest()->take(5)->get();
+                });
             @endphp
 
             @if($recentMembers->isNotEmpty())
