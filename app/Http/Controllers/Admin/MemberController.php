@@ -498,22 +498,26 @@ class MemberController extends Controller
             fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Club', 'Region', 'Position', 'Status', 'Paid Years']);
 
-            foreach ($members as $member) {
-                $paidEntries = $member->payments->sortBy('year_paid')->map(function ($p) {
-                    return $p->year_paid . ':' . $p->date_paid->format('Y-m-d');
-                })->implode(', ');
-                fputcsv($handle, [
-                    $member->first_name,
-                    $member->middle_initial,
-                    $member->last_name,
-                    $member->suffix,
-                    $member->contact_number,
-                    $member->club?->name ?? '',
-                    $member->club?->region?->name ?? '',
-                    $member->position?->name ?? '',
-                    $member->status,
-                    $paidEntries,
-                ]);
+            if ($members->isEmpty()) {
+                $this->writeExampleCsvRow($handle);
+            } else {
+                foreach ($members as $member) {
+                    $paidEntries = $member->payments->sortBy('year_paid')->map(function ($p) {
+                        return $p->year_paid . ':' . $p->date_paid->format('Y-m-d');
+                    })->implode(', ');
+                    fputcsv($handle, [
+                        $member->first_name,
+                        $member->middle_initial,
+                        $member->last_name,
+                        $member->suffix,
+                        $member->contact_number,
+                        $member->club?->name ?? '',
+                        $member->club?->region?->name ?? '',
+                        $member->position?->name ?? '',
+                        $member->status,
+                        $paidEntries,
+                    ]);
+                }
             }
 
             fclose($handle);
@@ -1079,6 +1083,49 @@ class MemberController extends Controller
         return redirect()
             ->route('admin.members.trashed')
             ->with('success', "Member '{$name}' permanently deleted.");
+    }
+
+    /**
+     * Download a sample CSV showing the expected format for imports.
+     * Always outputs the example row regardless of database state.
+     */
+    public function sampleCsv(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="members-sample-import-format.csv"',
+        ];
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['First Name', 'M.I.', 'Last Name', 'Suffix', 'Contact Number', 'Club', 'Region', 'Position', 'Status', 'Paid Years']);
+            $this->writeExampleCsvRow($handle);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Write the example CSV row onto an open file handle.
+     * Used by both the empty export fallback and the standalone sample download.
+     */
+    private function writeExampleCsvRow($handle): void
+    {
+        fputcsv($handle, ['# ── FORMAT EXAMPLE ONLY: Replace with actual data before importing ──']);
+        fputcsv($handle, [
+            'Juan',           // First Name
+            'D',              // M.I.
+            'Dela Cruz',      // Last Name
+            'Jr.',            // Suffix
+            '09171234567',    // Contact Number
+            'Your Club Name', // Club (use exact club name as it appears in the system)
+            'Your Region',    // Region (use exact region name as it appears in the system)
+            'Member',         // Position (use exact position name as it appears in the system)
+            'active',         // Status (active or inactive)
+            '2024:2024-01-15, 2025:2025-03-01', // Paid Years (format: YEAR:YYYY-MM-DD, YEAR:YYYY-MM-DD)
+        ]);
     }
 
     /**

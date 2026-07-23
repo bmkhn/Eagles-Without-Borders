@@ -131,6 +131,10 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members'])
         ->name('admin.members.export');
 
+    Route::get('/members/sample-csv', [\App\Http\Controllers\Admin\MemberController::class, 'sampleCsv'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members'])
+        ->name('admin.members.sample-csv');
+
     Route::post('/members/import', [\App\Http\Controllers\Admin\MemberController::class, 'import'])
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:create-members'])
         ->name('admin.members.import');

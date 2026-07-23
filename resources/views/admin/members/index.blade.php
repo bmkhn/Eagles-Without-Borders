@@ -52,7 +52,7 @@
                         </div>
 
                         <div class="ml-auto flex items-center gap-2">
-                            <!-- Info tooltip (export & import) -->
+                            <!-- Info tooltip (sample → import → export) -->
                             <div class="relative" x-data="{ showTooltip: false }">
                                 <svg
                                     @mouseenter="showTooltip = true"
@@ -69,25 +69,26 @@
                                     @mouseleave="showTooltip = false"
                                     class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-xs leading-relaxed shadow-lg z-50"
                                 >
-                                    <p class="whitespace-nowrap">{{ __('Export: Download a CSV of the members shown on this page (applies your search and filters).') }}</p>
+                                    <p class="whitespace-nowrap">{{ __('Sample: Download an example CSV with the correct format to use as a template for imports.') }}</p>
                                     <p class="whitespace-nowrap">{{ __('Import: Upload a CSV file to add members. Clubs are resolved from the CSV.') }}</p>
                                     <p class="whitespace-nowrap">{{ __('Duplicates are skipped. Scoped admins can only import within their scope.') }}</p>
+                                    <p class="whitespace-nowrap">{{ __('Export: Download a CSV of the members shown on this page (applies your search and filters).') }}</p>
                                     <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                                 </div>
                             </div>
 
-                            <!-- Export Button -->
+                            <!-- Sample CSV Button (learn the format first) -->
                             <a
-                                href="{{ route('admin.members.export', request()->query()) }}"
-                                class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                                href="{{ route('admin.members.sample-csv') }}"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition"
                             >
                                 <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
-                                {{ __('Export CSV') }}
+                                {{ __('Sample CSV') }}
                             </a>
 
-                            <!-- Import Button -->
+                            <!-- Import Button (bring data in) -->
                             <button
                                 type="button"
                                 @click="showImport = !showImport"
@@ -98,6 +99,17 @@
                                 </svg>
                                 {{ __('Import CSV') }}
                             </button>
+
+                            <!-- Export Button (take data out) -->
+                            <a
+                                href="{{ route('admin.members.export', request()->query()) }}"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                            >
+                                <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                {{ __('Export CSV') }}
+                            </a>
                         </div>
                     </div>
 
