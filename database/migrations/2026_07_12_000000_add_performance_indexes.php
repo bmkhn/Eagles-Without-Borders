@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,7 +12,14 @@ return new class extends Migration
         // Activity log: indexes for latest() sorting and description filtering
         Schema::table('activity_log', function (Blueprint $table) {
             $table->index('created_at', 'activity_log_created_at_index');
-            $table->index('description', 'activity_log_description_index');
+
+            // MySQL/MariaDB require a prefix length to index TEXT columns (Error 1170).
+            // SQLite and Postgres can index TEXT columns directly.
+            if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'])) {
+                $table->rawIndex('description(191)', 'activity_log_description_index');
+            } else {
+                $table->index('description', 'activity_log_description_index');
+            }
         });
 
         // Members: index status and position_id for filtering

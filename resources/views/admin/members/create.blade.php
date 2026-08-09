@@ -20,6 +20,10 @@
                     </div>
                 @endif
 
+                @php
+                    $initialClubId = $clubs->count() === 1 ? $clubs->first()->id : old('club_id');
+                @endphp
+
                 <form method="POST" action="{{ route('admin.members.store') }}" enctype="multipart/form-data"
                       x-data="{
                         submitting: false,
@@ -27,10 +31,49 @@
                         firstName: '{{ old('first_name') }}',
                         lastName: '{{ old('last_name') }}',
                         contactNumber: '{{ old('contact_number') }}',
+                        clubId: '{{ $initialClubId }}',
+                        duplicates: [],
+                        duplicateChecking: false,
+                        duplicateTimeout: null,
                         get allRequiredFilled() {
                             return this.firstName.trim() !== ''
                                 && this.lastName.trim() !== ''
                                 && this.contactNumber.trim() !== '';
+                        },
+                        get blockedClubIds() {
+                            return this.duplicates
+                                .map(d => Number(d.club_id))
+                                .filter(id => Number.isInteger(id) && id > 0);
+                        },
+                        get selectedClubConflict() {
+                            if (this.clubId === '' || this.clubId === null) return null;
+                            return this.duplicates.find(d => Number(d.club_id) === Number(this.clubId)) || null;
+                        },
+                        get duplicateBlocked() {
+                            return this.selectedClubConflict !== null;
+                        },
+                        checkDuplicates() {
+                            clearTimeout(this.duplicateTimeout);
+                            const first = (this.firstName || '').trim();
+                            const last = (this.lastName || '').trim();
+                            if (first.length < 2 || last.length < 2) {
+                                this.duplicates = [];
+                                this.duplicateChecking = false;
+                                return;
+                            }
+                            this.duplicateChecking = true;
+                            this.duplicateTimeout = setTimeout(() => {
+                                fetch('{{ route('admin.members.check-duplicate') }}?first_name=' + encodeURIComponent(first) + '&last_name=' + encodeURIComponent(last))
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        this.duplicates = data.matches || [];
+                                        this.duplicateChecking = false;
+                                    })
+                                    .catch(() => {
+                                        this.duplicates = [];
+                                        this.duplicateChecking = false;
+                                    });
+                            }, 400);
                         },
                         addPayment() {
                             this.payments.push({ year_paid: {{ (int) now()->year }}, date_paid: '{{ now()->format('Y-m-d') }}' });
@@ -39,7 +82,8 @@
                             this.payments.splice(index, 1);
                         }
                       }"
-                      @submit="submitting = true">
+                      x-init="checkDuplicates()"
+                      @submit="if (duplicateBlocked) { $event.preventDefault(); } else { submitting = true; }">
                     @csrf
 
                     {{-- Member Details Container --}}
@@ -63,11 +107,16 @@
                                         id="club_id"
                                         name="club_id"
                                         required
+                                        x-model="clubId"
                                         class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     >
                                         <option value="">{{ __('Select club') }}</option>
                                         @foreach($clubs as $club)
-                                            <option value="{{ $club->id }}" @selected(old('club_id') == $club->id)>
+                                            <option
+                                                value="{{ $club->id }}"
+                                                @selected(old('club_id') == $club->id)
+                                                :disabled="blockedClubIds.includes({{ $club->id }})"
+                                            >
                                                 {{ $club->name }}
                                             </option>
                                         @endforeach
@@ -76,6 +125,53 @@
                                 @error('club_id')
                                     <x-input-error class="mt-1" :messages="[$message]" />
                                 @enderror
+
+                                {{-- Live duplicate warnings --}}
+                                <p x-show="duplicateChecking" x-cloak class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                    <svg class="size-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    {{ __('Checking for existing profiles...') }}
+                                </p>
+
+                                <template x-if="selectedClubConflict && !selectedClubConflict.trashed">
+                                    <div class="mt-2 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2.5 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                                        <svg class="size-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <p>
+                                            {{ __('A member named') }} “<span class="font-semibold" x-text="selectedClubConflict.name"></span>”
+                                            {{ __('already has a profile in') }}
+                                            <span class="font-semibold" x-text="[selectedClubConflict.region_name, selectedClubConflict.club_name].filter(Boolean).join(' · ')"></span>
+                                            {{ __('as') }}
+                                            <span class="font-semibold" x-text="selectedClubConflict.position_name"></span>.
+                                            {{ __('Members with the same name cannot be created in the same club.') }}
+                                        </p>
+                                    </div>
+                                </template>
+
+                                <template x-if="selectedClubConflict && selectedClubConflict.trashed">
+                                    <div class="mt-2 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-300 flex items-start gap-2">
+                                        <svg class="size-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        <p>
+                                            {{ __('This member already exists but is in the trash (previously in') }}
+                                            <span class="font-semibold" x-text="selectedClubConflict.club_name"></span>).
+                                            {{ __('You cannot create them again in the same club.') }}
+                                        </p>
+                                    </div>
+                                </template>
+
+                                <template x-if="duplicates.length > 0 && !selectedClubConflict">
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                        <svg class="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {{ __('This name is already used in') }} <span x-text="duplicates.length"></span> {{ __('other club(s). Those clubs are unavailable for this member.') }}
+                                    </p>
+                                </template>
                             </div>
 
                             <div>
@@ -106,6 +202,7 @@
                                         name="first_name"
                                         type="text"
                                         x-model="firstName"
+                                        @input="checkDuplicates()"
                                         required
                                         class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
@@ -153,6 +250,7 @@
                                         name="last_name"
                                         type="text"
                                         x-model="lastName"
+                                        @input="checkDuplicates()"
                                         required
                                         class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     />
@@ -364,8 +462,8 @@
                         <div class="flex items-center gap-3">
                             <button
                                 type="submit"
-                                :disabled="!allRequiredFilled || submitting"
-                                :class="!allRequiredFilled || submitting
+                                :disabled="!allRequiredFilled || duplicateBlocked || submitting"
+                                :class="!allRequiredFilled || duplicateBlocked || submitting
                                     ? 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white opacity-50 cursor-not-allowed'
                                     : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
                                 "
@@ -387,6 +485,12 @@
                                 {{ __('Cancel') }}
                             </a>
                         </div>
+                        <p x-show="duplicateBlocked" x-cloak class="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                            <svg class="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ __('Select a different club to save this member.') }}
+                        </p>
                         <p class="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1.5">
                             <svg class="size-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>

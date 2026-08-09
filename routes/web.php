@@ -102,6 +102,11 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
         ]);
 
     // Members: All admin roles (scoped)
+    // Live duplicate check for the member create/edit forms
+    Route::get('/members/check-duplicate', [\App\Http\Controllers\Admin\MemberController::class, 'checkDuplicate'])
+        ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:create-members|edit-members'])
+        ->name('admin.members.check-duplicate');
+
     Route::resource('members', \App\Http\Controllers\Admin\MemberController::class)
         ->middleware(['role:super-admin|national-admin|regional-admin|club-admin', 'permission:view-members|create-members|edit-members|delete-members'])
         ->except(['show'])

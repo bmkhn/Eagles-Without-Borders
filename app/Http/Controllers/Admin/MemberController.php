@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\Payment;
 use App\Models\Position;
 use App\Models\Region;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -176,6 +177,57 @@ class MemberController extends Controller
         ]);
     }
 
+    /**
+     * Live duplicate check for the member create form.
+     *
+     * Returns any members (active OR trashed) with the same first + last name,
+     * scoped to what the current user can see, so the form can disable
+     * conflicting clubs and warn the user.
+     */
+    public function checkDuplicate(Request $request): JsonResponse
+    {
+        $firstName = trim((string) $request->string('first_name'));
+        $lastName = trim((string) $request->string('last_name'));
+        $ignore = (int) $request->integer('ignore');
+
+        if (mb_strlen($firstName) < 2 || mb_strlen($lastName) < 2) {
+            return response()->json(['matches' => []]);
+        }
+
+        $user = $request->user();
+
+        $query = Member::withTrashed()
+            ->with(['club.region', 'position'])
+            ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower($firstName)])
+            ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower($lastName)]);
+
+        // When editing, exclude the member being edited so its own record
+        // never shows up as a "duplicate".
+        if ($ignore > 0) {
+            $query->where('id', '!=', $ignore);
+        }
+
+        $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
+        $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
+
+        if ($isClubAdmin) {
+            $query->where('club_id', $user->club_id);
+        } elseif ($isRegionalAdmin) {
+            $query->whereHas('club', fn ($q) => $q->where('region_id', $user->region_id));
+        }
+
+        $matches = $query->orderBy('club_id')->get()->map(fn (Member $m) => [
+            'club_id' => $m->club_id !== null ? (int) $m->club_id : null,
+            'club_name' => $m->club?->name,
+            'region_name' => $m->club?->region?->name,
+            'position_name' => $m->position?->name,
+            'name' => $m->name,
+            'trashed' => $m->trashed(),
+        ])->values();
+
+        return response()->json(['matches' => $matches]);
+    }
+
     public function store(MemberStoreRequest $request): RedirectResponse
     {
         $user = request()->user();
@@ -188,6 +240,15 @@ class MemberController extends Controller
             $data['club_id'] = $user->club_id;
         }
 
+        // Rule: duplicates are allowed, but never in the same club.
+        // This check includes soft-deleted (trashed) members so recreating
+        // a trashed member in their old club is also blocked.
+        $duplicate = $this->findSameClubDuplicate((int) $data['club_id'], (string) $data['first_name'], (string) $data['last_name']);
+
+        if ($duplicate) {
+            return $this->duplicateConflictRedirect($duplicate);
+        }
+
         $member = new Member($data);
         $member->applySlugFromName();
         $member->status = 'inactive'; // New members start as inactive until they pay
@@ -196,7 +257,18 @@ class MemberController extends Controller
             $member->profile_picture = $this->storeProfilePicture($request->file('profile_picture'));
         }
 
-        $member->save();
+        try {
+            $member->save();
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Safety net (e.g. concurrent submissions): never surface a 500 for this.
+            if ($member->profile_picture) {
+                Storage::disk('public')->delete($member->profile_picture);
+            }
+
+            return back()
+                ->withErrors(['first_name' => 'A member with this name already exists in the selected club and could not be created.'])
+                ->withInput();
+        }
 
         if ($request->has('certificates')) {
             $this->syncCertificates($member, $request);
@@ -338,6 +410,14 @@ class MemberController extends Controller
         $member->fill($data);
         $member->applySlugFromName();
 
+        // Rule: duplicates are allowed, but never in the same club (same as create).
+        // Excludes this member, so saving without changing name/club never conflicts.
+        $duplicate = $this->findSameClubDuplicate((int) $member->club_id, (string) $member->first_name, (string) $member->last_name, $member->id);
+
+        if ($duplicate) {
+            return $this->duplicateConflictRedirect($duplicate, 'update');
+        }
+
         if ($request->hasFile('profile_picture')) {
             if ($member->profile_picture) {
                 Storage::disk('public')->delete($member->profile_picture);
@@ -348,7 +428,19 @@ class MemberController extends Controller
             $member->profile_picture = null;
         }
 
-        $member->save();
+        try {
+            $member->save();
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Safety net (e.g. concurrent edits): never surface a 500 for this.
+            // The profile picture was already replaced before save — clean up the new file.
+            if ($request->hasFile('profile_picture') && $member->profile_picture) {
+                Storage::disk('public')->delete($member->profile_picture);
+            }
+
+            return back()
+                ->withErrors(['first_name' => 'Another member with this name already exists in the selected club and the changes could not be saved.'])
+                ->withInput();
+        }
 
         if ($request->has('certificates') || $request->boolean('certificates_managed')) {
             $this->syncCertificates($member, $request);
@@ -1126,6 +1218,49 @@ class MemberController extends Controller
             'active',         // Status (active or inactive)
             '2024:2024-01-15, 2025:2025-03-01', // Paid Years (format: YEAR:YYYY-MM-DD, YEAR:YYYY-MM-DD)
         ]);
+    }
+
+    /**
+     * Find another member (active or trashed) with the same first + last name
+     * in the same club. Enforces the "duplicates allowed, but never in the
+     * same club" rule on create and update.
+     */
+    private function findSameClubDuplicate(int $clubId, string $firstName, string $lastName, ?int $ignoreMemberId = null): ?Member
+    {
+        return Member::withTrashed()
+            ->when($ignoreMemberId, fn ($q) => $q->where('id', '!=', $ignoreMemberId))
+            ->where('club_id', $clubId)
+            ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
+            ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
+            ->with(['club.region', 'position'])
+            ->first();
+    }
+
+    /**
+     * Build the friendly error redirect for a same-club duplicate conflict.
+     * $action controls the verb in the message ("create" vs "update").
+     */
+    private function duplicateConflictRedirect(Member $duplicate, string $action = 'create'): RedirectResponse
+    {
+        $duplicateName = $duplicate->name;
+        $verb = $action === 'create' ? 'create' : 'save';
+
+        if ($duplicate->trashed()) {
+            $trashedClub = $duplicate->club?->name ?? 'an unknown club';
+
+            return back()
+                ->withErrors(['first_name' => "A member named '{$duplicateName}' already exists but is in the trash (previously in {$trashedClub}). You cannot {$verb} a member with the same name in the same club."])
+                ->withInput();
+        }
+
+        $location = collect([$duplicate->club?->region?->name, $duplicate->club?->name])
+            ->filter()
+            ->implode(' · ');
+        $position = $duplicate->position?->name ?? 'an unknown position';
+
+        return back()
+            ->withErrors(['first_name' => "A member named '{$duplicateName}' already has a profile in {$location} as {$position}. You cannot {$verb} a member with the same name in the same club."])
+            ->withInput();
     }
 
     /**

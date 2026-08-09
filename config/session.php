@@ -143,7 +143,12 @@ return [
     |
     */
 
-    'path' => env('SESSION_PATH', '/'),
+    // Hardcoded instead of env('SESSION_PATH') because shell/OS environment
+    // pollution can override the .env value (e.g. MSYS2/Git Bash translates
+    // the path-like value to the Git install dir), which breaks the session
+    // cookie with "cookie path contains invalid characters". This app is
+    // always served at the root, so '/' is always correct.
+    'path' => '/',
 
     /*
     |--------------------------------------------------------------------------
@@ -156,7 +161,10 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    // Hardcoded to null for the same reason as 'path': an env var set to the
+    // literal string "null" would become the cookie domain and browsers would
+    // silently reject the session cookie.
+    'domain' => null,
 
     /*
     |--------------------------------------------------------------------------
