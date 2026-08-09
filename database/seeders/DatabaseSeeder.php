@@ -16,13 +16,16 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            // Essential seeders
             RoleSeeder::class,
             PermissionSeeder::class,
             PositionSeeder::class,
-            UserSeeder::class,
-            MemberSeeder::class,
-            CertificateSeeder::class,
-            PaymentSeeder::class,
+            AdminUserSeeder::class,
+
+            // UserSeeder::class,
+            // MemberSeeder::class,
+            // CertificateSeeder::class,
+            // PaymentSeeder::class,
         ]);
     }
 }
