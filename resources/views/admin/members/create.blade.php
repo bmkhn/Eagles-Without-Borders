@@ -27,6 +27,7 @@
                 <form method="POST" action="{{ route('admin.members.store') }}" enctype="multipart/form-data"
                       x-data="{
                         submitting: false,
+                        profilePictureError: false,
                         payments: [],
                         firstName: '{{ old('first_name') }}',
                         lastName: '{{ old('last_name') }}',
@@ -80,6 +81,15 @@
                         },
                         removePayment(index) {
                             this.payments.splice(index, 1);
+                        },
+                        validateProfilePicture($event) {
+                            const file = $event.target.files[0];
+                            if (file && file.size > 2 * 1024 * 1024) {
+                                this.profilePictureError = true;
+                                $event.target.value = '';
+                            } else {
+                                this.profilePictureError = false;
+                            }
                         }
                       }"
                       x-init="checkDuplicates()"
@@ -280,9 +290,13 @@
                                     name="profile_picture"
                                     type="file"
                                     accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                    @change="validateProfilePicture($event)"
                                     class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                 />
                                 <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
+                                <p x-show="profilePictureError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                    {{ __('This file is too large. Maximum size is 2MB.') }}
+                                </p>
                                 @error('profile_picture')
                                     <x-input-error class="mt-1" :messages="[$message]" />
                                 @enderror
@@ -296,10 +310,19 @@
                             submitting: false,
                             certificates: [],
                             addCertificate() {
-                                this.certificates.push({ name: '', file: null, issued_at: '' });
+                                this.certificates.push({ name: '', file: null, issued_at: '', fileError: false });
                             },
                             removeCertificate(index) {
                                 this.certificates.splice(index, 1);
+                            },
+                            validateCertificateFile($event, index) {
+                                const file = $event.target.files[0];
+                                if (file && file.size > 5 * 1024 * 1024) {
+                                    this.certificates[index].fileError = true;
+                                    $event.target.value = '';
+                                } else {
+                                    this.certificates[index].fileError = false;
+                                }
                             }
                          }">
                         <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-950/30 dark:to-transparent border-b border-gray-200 dark:border-gray-700">
@@ -368,9 +391,13 @@
                                                 :name="'certificates[' + index + '][file]'"
                                                 type="file"
                                                 accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image.webp"
+                                                @change="validateCertificateFile($event, index)"
                                                 class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                             />
                                             <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
+                                            <p x-show="cert.fileError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                                {{ __('This file is too large. Maximum size is 5MB.') }}
+                                            </p>
                                             @error('certificates.*.file')
                                                 <x-input-error class="mt-1" :messages="[$message]" />
                                             @enderror
@@ -462,8 +489,8 @@
                         <div class="flex items-center gap-3">
                             <button
                                 type="submit"
-                                :disabled="!allRequiredFilled || duplicateBlocked || submitting"
-                                :class="!allRequiredFilled || duplicateBlocked || submitting
+                                :disabled="!allRequiredFilled || duplicateBlocked || submitting || profilePictureError"
+                                :class="!allRequiredFilled || duplicateBlocked || submitting || profilePictureError
                                     ? 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white opacity-50 cursor-not-allowed'
                                     : 'inline-flex items-center px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150'
                                 "

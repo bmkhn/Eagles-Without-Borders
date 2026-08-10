@@ -65,6 +65,7 @@
                                 contactNumber: '{{ old('contact_number', $member->contact_number) }}',
                                 profilePictureSelected: false,
                                 removePhoto: false,
+                                profilePictureError: false,
                                 duplicates: [],
                                 duplicateChecking: false,
                                 duplicateTimeout: null,
@@ -113,6 +114,18 @@
                                                 this.duplicateChecking = false;
                                             });
                                     }, 400);
+                                },
+                                validateProfilePicture($event) {
+                                    const file = $event.target.files[0];
+                                    if (file && file.size > 2 * 1024 * 1024) {
+                                        this.profilePictureError = true;
+                                        this.profilePictureSelected = false;
+                                        $event.target.value = '';
+                                        return;
+                                    }
+                                    this.profilePictureError = false;
+                                    this.profilePictureSelected = !!file;
+                                    if (file) this.removePhoto = false;
                                 },
                                 init() {
                                     this.$watch('isDirty', (val) => {
@@ -361,10 +374,13 @@
                                         name="profile_picture"
                                         type="file"
                                         accept="image/jpeg,image/png,image/jpg,image/gif,image.webp"
-                                        @change="profilePictureSelected = $event.target.files.length > 0; if ($event.target.files.length > 0) removePhoto = false"
+                                        @change="validateProfilePicture($event)"
                                         class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                     />
                                     <p class="mt-1 text-xs text-gray-500">{{ __('Optional. Leave empty to keep current. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
+                                    <p x-show="profilePictureError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                        {{ __('This file is too large. Maximum size is 2MB.') }}
+                                    </p>
                                     @error('profile_picture')
                                         <x-input-error class="mt-1" :messages="[$message]" />
                                     @enderror
@@ -389,7 +405,19 @@
                     {{-- Add Certificate Form --}}
                     <div
                         class="mb-4 p-4 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30"
-                        x-data="{ showForm: false }"
+                        x-data="{
+                            showForm: false,
+                            certFileError: false,
+                            validateCertificateFile($event) {
+                                const file = $event.target.files[0];
+                                if (file && file.size > 5 * 1024 * 1024) {
+                                    this.certFileError = true;
+                                    $event.target.value = '';
+                                } else {
+                                    this.certFileError = false;
+                                }
+                            }
+                        }"
                     >
                         <button
                             type="button"
@@ -441,15 +469,21 @@
                                         id="new_cert_file"
                                         name="file"
                                         type="file"
+                                        @change="validateCertificateFile($event)"
                                         accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
                                         class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                     />
                                     <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
+                                    <p x-show="certFileError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                        {{ __('This file is too large. Maximum size is 5MB.') }}
+                                    </p>
                                 </div>
                             </div>
                             <div class="mt-3">
                                 <button
                                     type="submit"
+                                    :disabled="certFileError"
+                                    :class="certFileError ? 'opacity-50 cursor-not-allowed' : ''"
                                     class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-500 transition"
                                 >
                                     {{ __('Save Certificate') }}
@@ -466,7 +500,19 @@
                             @foreach($certificates as $cert)
                                 <div
                                     class="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm"
-                                    x-data="{ editing: false }"
+                                    x-data="{
+                                        editing: false,
+                                        certFileError: false,
+                                        validateCertificateFile($event) {
+                                            const file = $event.target.files[0];
+                                            if (file && file.size > 5 * 1024 * 1024) {
+                                                this.certFileError = true;
+                                                $event.target.value = '';
+                                            } else {
+                                                this.certFileError = false;
+                                            }
+                                        }
+                                    }"
                                 >
                                     <svg class="size-4 shrink-0 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -524,13 +570,19 @@
                                             <input
                                                 type="file"
                                                 name="file"
+                                                @change="validateCertificateFile($event)"
                                                 accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
                                                 class="block w-full text-xs text-gray-700 dark:text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400"
                                             >
                                         </div>
+                                        <p x-show="certFileError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                            {{ __('This file is too large. Maximum size is 5MB.') }}
+                                        </p>
                                         <div class="flex items-center gap-2 mt-2">
                                             <button
                                                 type="submit"
+                                                :disabled="certFileError"
+                                                :class="certFileError ? 'opacity-50 cursor-not-allowed' : ''"
                                                 class="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-semibold hover:bg-indigo-500 transition"
                                             >
                                                 {{ __('Save') }}
