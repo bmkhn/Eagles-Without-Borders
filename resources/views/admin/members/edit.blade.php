@@ -63,6 +63,8 @@
                                 lastName: '{{ old('last_name', $member->last_name) }}',
                                 suffix: '{{ old('suffix', $member->suffix) }}',
                                 contactNumber: '{{ old('contact_number', $member->contact_number) }}',
+                                profilePictureSelected: false,
+                                removePhoto: false,
                                 duplicates: [],
                                 duplicateChecking: false,
                                 duplicateTimeout: null,
@@ -73,7 +75,9 @@
                                         || this.suffix !== this.originalSuffix
                                         || this.contactNumber !== this.originalContactNumber
                                         || String(this.clubId) !== String(this.originalClubId)
-                                        || String(this.positionId) !== String(this.originalPositionId);
+                                        || String(this.positionId) !== String(this.originalPositionId)
+                                        || this.profilePictureSelected
+                                        || this.removePhoto;
                                 },
                                 get blockedClubIds() {
                                     return this.duplicates
@@ -344,6 +348,7 @@
                                                     type="checkbox"
                                                     name="remove_photo"
                                                     value="1"
+                                                    x-model="removePhoto"
                                                     class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
                                                 >
                                                 <span class="text-sm text-red-600 font-medium">{{ __('Remove photo') }}</span>
@@ -356,6 +361,7 @@
                                         name="profile_picture"
                                         type="file"
                                         accept="image/jpeg,image/png,image/jpg,image/gif,image.webp"
+                                        @change="profilePictureSelected = $event.target.files.length > 0; if ($event.target.files.length > 0) removePhoto = false"
                                         class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                     />
                                     <p class="mt-1 text-xs text-gray-500">{{ __('Optional. Leave empty to keep current. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
