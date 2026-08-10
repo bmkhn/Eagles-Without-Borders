@@ -62,6 +62,22 @@
                             ])
                             ->sortByDesc('count');
                     });
+
+                    $adminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_admin_coverage', 60, function () {
+                        $regionsWithAdmins = \App\Models\Region::query()
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->orderBy('name')
+                            ->get();
+
+                        $clubsWithAdmins = \App\Models\Club::query()
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->orderBy('name')
+                            ->get();
+
+                        return compact('regionsWithAdmins', 'clubsWithAdmins');
+                    });
+
+                    extract($adminCoverage);
                 } elseif ($isRegionalAdmin) {
                     $regionData = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_re_data', 60, function () use ($user) {
                         $region = $user->region_id ? \App\Models\Region::find($user->region_id) : null;
@@ -76,6 +92,23 @@
                     $regionClubIds = $regionData['regionClubIds'];
                     $clubCount = $regionData['clubCount'];
                     $memberCount = $regionData['memberCount'];
+
+                    $regionalAdminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ra_admin_coverage', 60, function () use ($user, $regionClubIds) {
+                        $regionsWithAdmins = \App\Models\Region::query()
+                            ->where('id', $user->region_id)
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->get();
+
+                        $clubsWithAdmins = \App\Models\Club::query()
+                            ->whereIn('id', $regionClubIds)
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->orderBy('name')
+                            ->get();
+
+                        return compact('regionsWithAdmins', 'clubsWithAdmins');
+                    });
+
+                    extract($regionalAdminCoverage);
                 } else {
                     $clubData = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ca_data', 60, function () use ($user) {
                         $clubId = $user->club_id;
@@ -86,6 +119,17 @@
 
                     $clubId = $clubData['clubId'];
                     $memberCount = $clubData['memberCount'];
+
+                    $clubAdminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ca_admin_coverage', 60, function () use ($clubId) {
+                        $clubsWithAdmins = \App\Models\Club::query()
+                            ->where('id', $clubId)
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->get();
+
+                        return compact('clubsWithAdmins');
+                    });
+
+                    extract($clubAdminCoverage);
                 }
             @endphp
 
@@ -562,6 +606,8 @@
                         </div>
                     </div>
                 </div>
+
+                @include('admin.partials.admin-accounts')
             @elseif($isRegionalAdmin)
                 <!-- Regional Admin quick links -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -589,6 +635,8 @@
                         </div>
                     </div>
                 </div>
+
+                @include('admin.partials.admin-accounts')
             @elseif($isClubAdmin)
                 <!-- Club Admin quick links -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -616,6 +664,8 @@
                         </div>
                     </div>
                 </div>
+
+                @include('admin.partials.admin-accounts', ['showRegionCard' => false])
             @endif
 
             <!-- Recent Members -->

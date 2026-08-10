@@ -34,4 +34,12 @@ class Club extends Model
                 $q->where('name', 'club-admin');
             });
     }
+
+    /**
+     * All admin accounts connected to this club.
+     */
+    public function adminUsers(): HasMany
+    {
+        return $this->hasMany(User::class, 'club_id');
+    }
 }

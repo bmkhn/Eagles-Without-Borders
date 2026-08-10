@@ -27,4 +27,12 @@ class Region extends Model
                 $q->where('name', 'regional-admin');
             });
     }
+
+    /**
+     * All admin accounts connected to this region.
+     */
+    public function adminUsers(): HasMany
+    {
+        return $this->hasMany(User::class, 'region_id');
+    }
 }

@@ -410,6 +410,114 @@ class AdminDashboardTest extends TestCase
     }
 
     /** @test */
+    public function national_level_dashboard_shows_admin_accounts_by_region_and_club(): void
+    {
+        $regionA = Region::factory()->create(['name' => 'Region A']);
+        $regionB = Region::factory()->create(['name' => 'Region B']);
+        $clubA = Club::factory()->create(['region_id' => $regionA->id, 'name' => 'Club A']);
+        Club::factory()->create(['region_id' => $regionB->id, 'name' => 'Club B']);
+
+        $regionalAdmin = User::factory()->create(['name' => 'Region Admin One', 'region_id' => $regionA->id]);
+        $regionalAdmin->assignRole('regional-admin');
+        $regionalAdmin2 = User::factory()->create(['name' => 'Region Admin Two', 'region_id' => $regionA->id]);
+        $regionalAdmin2->assignRole('regional-admin');
+
+        $clubAdmin = User::factory()->create(['name' => 'Club Admin One', 'club_id' => $clubA->id]);
+        $clubAdmin->assignRole('club-admin');
+
+        $user = User::factory()->create();
+        $user->assignRole('super-admin');
+
+        $response = $this->actingAs($user)->get(route('admin.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Admin Accounts by Region & Club');
+        $response->assertSee('By Region');
+        $response->assertSee('By Club');
+        $response->assertSee('Region Admin One');
+        $response->assertSee('Region Admin Two');
+        $response->assertSee('Club Admin One');
+        // Region B and Club B have no admin accounts
+        $response->assertSee('None');
+    }
+
+    /** @test */
+    public function regional_admin_sees_admin_accounts_within_their_scope(): void
+    {
+        $regionA = Region::factory()->create(['name' => 'Region A']);
+        $regionB = Region::factory()->create(['name' => 'Region B']);
+        $clubA = Club::factory()->create(['region_id' => $regionA->id, 'name' => 'Club A']);
+        $clubB = Club::factory()->create(['region_id' => $regionB->id, 'name' => 'Club B']);
+
+        // Regional admin of region A (also a second admin on the same region)
+        $regionalAdmin = User::factory()->create(['name' => 'My Region Admin', 'region_id' => $regionA->id]);
+        $regionalAdmin->assignRole('regional-admin');
+        $secondAdmin = User::factory()->create(['name' => 'Second Region Admin', 'region_id' => $regionA->id]);
+        $secondAdmin->assignRole('regional-admin');
+
+        // Club admin in region A's club
+        $clubAdminA = User::factory()->create(['name' => 'Club Admin A', 'club_id' => $clubA->id]);
+        $clubAdminA->assignRole('club-admin');
+
+        // Out-of-scope admins (region B and its club)
+        $regionBAdmin = User::factory()->create(['name' => 'Region B Admin', 'region_id' => $regionB->id]);
+        $regionBAdmin->assignRole('regional-admin');
+        $clubAdminB = User::factory()->create(['name' => 'Club Admin B', 'club_id' => $clubB->id]);
+        $clubAdminB->assignRole('club-admin');
+
+        $response = $this->actingAs($regionalAdmin)->get(route('admin.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Admin Accounts by Region & Club');
+        $response->assertSee('My Region Admin');
+        $response->assertSee('Second Region Admin');
+        $response->assertSee('Club Admin A');
+        // Out-of-scope admins and clubs are not shown
+        $response->assertDontSee('Region B Admin');
+        $response->assertDontSee('Club Admin B');
+        $response->assertDontSee('Club B');
+    }
+
+    /** @test */
+    public function club_admin_sees_admin_accounts_within_their_scope(): void
+    {
+        $regionA = Region::factory()->create(['name' => 'Region A']);
+        $regionB = Region::factory()->create(['name' => 'Region B']);
+        $clubA = Club::factory()->create(['region_id' => $regionA->id, 'name' => 'Club A']);
+        $clubB = Club::factory()->create(['region_id' => $regionB->id, 'name' => 'Club B']);
+
+        // Regional admin of the club's region
+        $regionalAdmin = User::factory()->create(['name' => 'Region A Admin', 'region_id' => $regionA->id]);
+        $regionalAdmin->assignRole('regional-admin');
+
+        // Club admins of the club (multiple case)
+        $clubAdmin = User::factory()->create(['name' => 'My Club Admin', 'club_id' => $clubA->id]);
+        $clubAdmin->assignRole('club-admin');
+        $secondClubAdmin = User::factory()->create(['name' => 'Second Club Admin', 'club_id' => $clubA->id]);
+        $secondClubAdmin->assignRole('club-admin');
+
+        // Out-of-scope admins (region B and its club)
+        $regionBAdmin = User::factory()->create(['name' => 'Region B Admin', 'region_id' => $regionB->id]);
+        $regionBAdmin->assignRole('regional-admin');
+        $clubAdminB = User::factory()->create(['name' => 'Club Admin B', 'club_id' => $clubB->id]);
+        $clubAdminB->assignRole('club-admin');
+
+        $response = $this->actingAs($clubAdmin)->get(route('admin.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Admin Accounts by Club');
+        $response->assertSee('My Club Admin');
+        $response->assertSee('Second Club Admin');
+        // The region card is hidden for club admins
+        $response->assertDontSee('By Region');
+        $response->assertDontSee('Region A Admin');
+        // Out-of-scope admins and clubs are not shown
+        $response->assertDontSee('Region B Admin');
+        $response->assertDontSee('Club Admin B');
+        $response->assertDontSee('Club B');
+    }
+
+    /** @test */
     public function national_level_dashboard_shows_position_counts(): void
     {
         $region = Region::factory()->create();
