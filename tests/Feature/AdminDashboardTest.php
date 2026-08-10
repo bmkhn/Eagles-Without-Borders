@@ -439,6 +439,8 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Club Admin One');
         // Region B and Club B have no admin accounts
         $response->assertSee('None');
+        // Both cards show an unstaffed badge for the region/club with no admin
+        $response->assertSee('1 unstaffed');
     }
 
     /** @test */
