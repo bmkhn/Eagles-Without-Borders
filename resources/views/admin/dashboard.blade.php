@@ -65,12 +65,12 @@
 
                     $adminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_admin_coverage', 60, function () {
                         $regionsWithAdmins = \App\Models\Region::query()
-                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->orderBy('name')])
                             ->orderBy('name')
                             ->get();
 
                         $clubsWithAdmins = \App\Models\Club::query()
-                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->orderBy('name')])
                             ->orderBy('name')
                             ->get();
 
@@ -96,12 +96,12 @@
                     $regionalAdminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ra_admin_coverage', 60, function () use ($user, $regionClubIds) {
                         $regionsWithAdmins = \App\Models\Region::query()
                             ->where('id', $user->region_id)
-                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->orderBy('name')])
                             ->get();
 
                         $clubsWithAdmins = \App\Models\Club::query()
                             ->whereIn('id', $regionClubIds)
-                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->orderBy('name')])
                             ->orderBy('name')
                             ->get();
 
@@ -123,7 +123,7 @@
                     $clubAdminCoverage = \Illuminate\Support\Facades\Cache::remember($cacheKey . '_ca_admin_coverage', 60, function () use ($clubId) {
                         $clubsWithAdmins = \App\Models\Club::query()
                             ->where('id', $clubId)
-                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->with('roles')->orderBy('name')])
+                            ->with(['adminUsers' => fn ($q) => $q->whereHas('roles')->orderBy('name')])
                             ->get();
 
                         return compact('clubsWithAdmins');
@@ -524,6 +524,12 @@
                 @endif
             @endif
 
+            @if($isNationLevel || $isRegionalAdmin)
+                @include('admin.partials.admin-accounts')
+            @elseif($isClubAdmin)
+                @include('admin.partials.admin-accounts', ['showRegionCard' => false])
+            @endif
+
             @if($isNationLevel)
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -606,8 +612,6 @@
                         </div>
                     </div>
                 </div>
-
-                @include('admin.partials.admin-accounts')
             @elseif($isRegionalAdmin)
                 <!-- Regional Admin quick links -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -635,8 +639,6 @@
                         </div>
                     </div>
                 </div>
-
-                @include('admin.partials.admin-accounts')
             @elseif($isClubAdmin)
                 <!-- Club Admin quick links -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -664,8 +666,6 @@
                         </div>
                     </div>
                 </div>
-
-                @include('admin.partials.admin-accounts', ['showRegionCard' => false])
             @endif
 
             <!-- Recent Members -->
