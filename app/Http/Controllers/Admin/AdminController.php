@@ -392,7 +392,7 @@ class AdminController extends Controller
 
         $logs = $logsQuery->paginate(20)->withQueryString();
 
-        [$eventTypes, $logNames] = Cache::remember('audit_log_filter_options', 3600, function () use ($user, $isSuperAdmin, $isNationalAdmin, $isRegionalAdmin, $isClubAdmin) {
+        [$eventTypes, $logNames] = Cache::remember('audit_log_filter_options_' . $user->id, 3600, function () use ($user, $isSuperAdmin, $isNationalAdmin, $isRegionalAdmin, $isClubAdmin) {
             $eventTypesQuery = Activity::query()->select('description')->distinct();
             $logNamesQuery = Activity::query()->select('log_name')->distinct();
 

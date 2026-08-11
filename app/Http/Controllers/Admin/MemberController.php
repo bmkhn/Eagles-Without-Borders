@@ -746,7 +746,6 @@ class MemberController extends Controller
             $clubName = $row[$colMap['club']] ?? '';
             $regionName = $row[$colMap['region']] ?? '';
             $positionName = $row[$colMap['position']] ?? '';
-            $status = $row[$colMap['status']] ?? 'active';
 
             // Validate required fields
             if (empty($firstName) || empty($lastName)) {
@@ -1067,6 +1066,19 @@ class MemberController extends Controller
         Payment::where('member_id', $member->id)->restore();
 
         $member->restore();
+
+        // If another (non-deleted) member already occupies this slug (taken while
+        // this member was trashed), regenerate a fresh unique one so the public
+        // profile URL stays unambiguous.
+        $slugTaken = Member::query()
+            ->where('slug', $member->slug)
+            ->where('id', '!=', $member->id)
+            ->exists();
+
+        if ($slugTaken) {
+            $member->applySlugFromName();
+            $member->save();
+        }
 
         // Re-evaluate status after restoring
         $member->updateStatusFromPayments();

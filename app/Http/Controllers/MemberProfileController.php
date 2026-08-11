@@ -18,7 +18,7 @@ class MemberProfileController extends Controller
     public function show(string $slug): View
     {
         $member = Member::query()
-            ->with(['position', 'club.region', 'certificates'])
+            ->with(['position', 'club.region', 'certificates', 'payments'])
             ->where('slug', $slug)
             ->first();
 

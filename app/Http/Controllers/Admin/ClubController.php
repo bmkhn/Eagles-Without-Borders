@@ -10,6 +10,7 @@ use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -68,28 +69,32 @@ class ClubController extends Controller
             $validated['region_id'] = $user->region_id;
         }
 
-        $club = Club::create($validated);
+        $club = DB::transaction(function () use ($request, $validated) {
+            $club = Club::create($validated);
 
-        // Create the club admin user
-        $cpUser = User::create([
-            'name' => $request->cp_name,
-            'email' => $request->cp_email,
-            'password' => Hash::make($request->cp_password),
-            'club_id' => $club->id,
-        ]);
-
-        $cpUser->syncRoles(['club-admin']);
-
-        activity()
-            ->performedOn($club)
-            ->causedBy(auth()->user())
-            ->withProperties([
+            // Create the club admin user
+            $cpUser = User::create([
+                'name' => $request->cp_name,
+                'email' => $request->cp_email,
+                'password' => Hash::make($request->cp_password),
                 'club_id' => $club->id,
-                'club_name' => $club->name,
-                'region_id' => $club->region_id,
-                'club_admin_email' => $cpUser->email,
-            ])
-            ->log('created');
+            ]);
+
+            $cpUser->syncRoles(['club-admin']);
+
+            activity()
+                ->performedOn($club)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'club_id' => $club->id,
+                    'club_name' => $club->name,
+                    'region_id' => $club->region_id,
+                    'club_admin_email' => $cpUser->email,
+                ])
+                ->log('created');
+
+            return $club;
+        });
 
         return redirect()
             ->route('admin.clubs.index')
@@ -163,6 +168,14 @@ class ClubController extends Controller
                     }
                 }
             } else {
+                // A brand-new club admin account requires all three fields;
+                // otherwise User::create would fail (or produce a 500) on null data.
+                if (! $request->filled('cp_name') || ! $request->filled('cp_email') || ! $request->filled('cp_password')) {
+                    return back()
+                        ->withErrors(['cp_name' => 'To create a new club admin account, name, email, and password are all required.'])
+                        ->withInput();
+                }
+
                 $cpUser = User::create([
                     'name' => $request->cp_name,
                     'email' => $request->cp_email,

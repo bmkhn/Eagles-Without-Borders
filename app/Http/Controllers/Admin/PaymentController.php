@@ -187,13 +187,7 @@ class PaymentController extends Controller
                 ])
                 ->log('payment_restored');
 
-            if ($request->has('_redirect')) {
-                $redirectTo = $request->input('_redirect');
-            } else {
-                $redirectTo = route('admin.payments.index');
-            }
-
-            return redirect($redirectTo)
+            return redirect($this->resolveRedirect($request, route('admin.payments.index')))
                 ->with('success', "Payment restored for {$member->name} — Year {$validated['year_paid']}.");
         }
 
@@ -222,13 +216,7 @@ class PaymentController extends Controller
 
         // Determine redirect: if _redirect is explicitly provided (e.g. from inline form), use it;
         // otherwise redirect to the payments index (standalone create page).
-        if ($request->has('_redirect')) {
-            $redirectTo = $request->input('_redirect');
-        } else {
-            $redirectTo = route('admin.payments.index');
-        }
-
-        return redirect($redirectTo)
+        return redirect($this->resolveRedirect($request, route('admin.payments.index')))
             ->with('success', "Payment recorded for {$member->name} — Year {$validated['year_paid']}.");
     }
 
@@ -317,13 +305,7 @@ class PaymentController extends Controller
 
         // Determine redirect: if _redirect is explicitly provided, use it;
         // otherwise redirect to the member edit page (inline edit) or payments index (standalone edit)
-        if ($request->has('_redirect')) {
-            $redirectTo = $request->input('_redirect');
-        } else {
-            $redirectTo = route('admin.payments.index');
-        }
-
-        return redirect($redirectTo)
+        return redirect($this->resolveRedirect($request, route('admin.payments.index')))
             ->with('success', "Payment updated for {$member->name} — Year {$validated['year_paid']}.");
     }
 
@@ -363,5 +345,45 @@ class PaymentController extends Controller
         return redirect()
             ->route('admin.members.edit', $member)
             ->with('success', "Payment record for Year {$year} has been deleted for {$member?->name}.");
+    }
+
+    /**
+     * Resolve the redirect destination from the request, falling back to an internal
+     * route when the provided URL is missing or points outside the app.
+     * Prevents open-redirect abuse via a crafted "_redirect" value.
+     */
+    private function resolveRedirect(Request $request, string $fallback): string
+    {
+        $redirect = $request->input('_redirect');
+
+        if (! is_string($redirect) || trim($redirect) === '') {
+            return $fallback;
+        }
+
+        $redirect = trim($redirect);
+
+        // Allow relative paths (e.g. /admin/...) — but never protocol-relative "//host".
+        if (str_starts_with($redirect, '/') && ! str_starts_with($redirect, '//')) {
+            return $redirect;
+        }
+
+        // Allow absolute URLs only when they point at this app's host (request host
+        // or the configured APP_URL host). Ports are stripped before comparing since
+        // parse_url keeps the port in the host component while getHost() does not.
+        $host = parse_url($redirect, PHP_URL_HOST);
+        $host = is_string($host) ? explode(':', $host)[0] : null;
+
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+        $appHost = is_string($appHost) ? explode(':', $appHost)[0] : null;
+
+        if (is_string($host) && strtolower($host) === strtolower($request->getHost())) {
+            return $redirect;
+        }
+
+        if (is_string($appHost) && $appHost !== '' && is_string($host) && strtolower($host) === strtolower($appHost)) {
+            return $redirect;
+        }
+
+        return $fallback;
     }
 }

@@ -206,7 +206,7 @@ Route::middleware(['auth', 'scope'])->prefix('admin')->group(function () {
     })->middleware(['auth', 'scope'])->name('admin.check-email');
 
     Route::get('/{any}', function () {
-        return view('admin.*');
+        abort(404);
     })->where('any', '.*')->name('admin.catchall');
 });
 

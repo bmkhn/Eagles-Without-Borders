@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Certificate;
 use App\Models\Club;
 use App\Models\Member;
+use App\Models\Payment;
 use App\Models\Region;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,6 +28,16 @@ class ScopeMiddleware
 
         // Check if user has a scoped role
         if (!$user->hasAnyRole(['regional-admin', 'club-admin'])) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        // Scoped admins must have their scope assigned. Without it the controllers
+        // would fall through their scoping branches and expose data outside the
+        // user's organization, so deny access instead.
+        if (
+            ($user->hasRole('regional-admin') && ! $user->region_id)
+            || ($user->hasRole('club-admin') && ! $user->club_id)
+        ) {
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
@@ -87,7 +98,31 @@ class ScopeMiddleware
 
             // Route-bound Certificate model
             if ($param instanceof Certificate) {
-                $member = $param->relationLoaded('member') ? $param->member : $param->member;
+                $member = $param->member;
+
+                if (!$member) {
+                    return response()->json(['message' => 'Forbidden.'], 403);
+                }
+
+                if ($user->hasRole('regional-admin')) {
+                    $memberRegionId = $member->relationLoaded('club')
+                        ? $member->club->region_id
+                        : $member->club()->value('region_id');
+
+                    if ((int) $memberRegionId !== (int) $regionId) {
+                        return response()->json(['message' => 'Forbidden.'], 403);
+                    }
+                } elseif ($user->hasRole('club-admin')) {
+                    if ((int) $member->club_id !== (int) $clubId) {
+                        return response()->json(['message' => 'Forbidden.'], 403);
+                    }
+                }
+                continue;
+            }
+
+            // Route-bound Payment model
+            if ($param instanceof Payment) {
+                $member = $param->member;
 
                 if (!$member) {
                     return response()->json(['message' => 'Forbidden.'], 403);

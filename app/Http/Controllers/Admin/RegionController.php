@@ -9,6 +9,7 @@ use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
@@ -42,27 +43,31 @@ class RegionController extends Controller
 
     public function store(RegionStoreRequest $request): RedirectResponse
     {
-        $region = Region::create($request->safe()->only(['name']));
+        $region = DB::transaction(function () use ($request) {
+            $region = Region::create($request->safe()->only(['name']));
 
-        // Create the regional admin user
-        $user = User::create([
-            'name' => $request->ra_name,
-            'email' => $request->ra_email,
-            'password' => Hash::make($request->ra_password),
-            'region_id' => $region->id,
-        ]);
-
-        $user->syncRoles(['regional-admin']);
-
-        activity()
-            ->performedOn($region)
-            ->causedBy(auth()->user())
-            ->withProperties([
+            // Create the regional admin user
+            $user = User::create([
+                'name' => $request->ra_name,
+                'email' => $request->ra_email,
+                'password' => Hash::make($request->ra_password),
                 'region_id' => $region->id,
-                'region_name' => $region->name,
-                'regional_admin_email' => $user->email,
-            ])
-            ->log('created');
+            ]);
+
+            $user->syncRoles(['regional-admin']);
+
+            activity()
+                ->performedOn($region)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'region_id' => $region->id,
+                    'region_name' => $region->name,
+                    'regional_admin_email' => $user->email,
+                ])
+                ->log('created');
+
+            return $region;
+        });
 
         return redirect()
             ->route('admin.regions.index')
@@ -119,6 +124,14 @@ class RegionController extends Controller
                     }
                 }
             } else {
+                // A brand-new regional admin account requires all three fields;
+                // otherwise User::create would fail (or produce a 500) on null data.
+                if (! $request->filled('ra_name') || ! $request->filled('ra_email') || ! $request->filled('ra_password')) {
+                    return back()
+                        ->withErrors(['ra_name' => 'To create a new regional admin account, name, email, and password are all required.'])
+                        ->withInput();
+                }
+
                 $raUser = User::create([
                     'name' => $request->ra_name,
                     'email' => $request->ra_email,
