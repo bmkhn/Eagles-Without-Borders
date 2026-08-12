@@ -235,6 +235,8 @@ class MemberController extends Controller
         $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
 
         $data = $request->safe()->except(['profile_picture', 'certificates']);
+        // Contact number is optional; store an empty string so NOT NULL column is satisfied.
+        $data['contact_number'] = $data['contact_number'] ?? '';
 
         if ($isClubAdmin) {
             $data['club_id'] = $user->club_id;
@@ -399,6 +401,8 @@ class MemberController extends Controller
         ];
 
         $data = $request->safe()->except(['profile_picture', 'remove_photo', 'certificates']);
+        // Contact number is optional; store an empty string so NOT NULL column is satisfied.
+        $data['contact_number'] = $data['contact_number'] ?? '';
 
         // Status is auto-managed based on payments — do not allow manual changes
         unset($data['status']);
@@ -622,7 +626,7 @@ class MemberController extends Controller
      * Import members from CSV.
      *
      * CSV must match the export format: First Name, M.I., Last Name, Suffix,
-     * Contact Number, Club, Region, Position, Status.
+     * Club, Region, Position, Status. Contact Number is optional.
      *
      * - The club is resolved from the CSV 'Club' column — no target club picker needed.
      * - Club Admin: all rows must reference their club.
@@ -660,7 +664,8 @@ class MemberController extends Controller
         // Normalize headers
         $header = array_map(fn ($h) => trim(mb_strtolower(str_replace(['-', ' '], '_', $h))), $header);
 
-        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'contact_number', 'club', 'region', 'position', 'status', 'paid_years'];
+        // contact_number is optional: rows without it are imported with an empty number.
+        $expectedHeaders = ['first_name', 'm.i.', 'last_name', 'suffix', 'club', 'region', 'position', 'status', 'paid_years'];
         // Also accept 'middle_initial' instead of 'm.i.'
         $normalizedHeaders = array_map(function ($h) {
             return $h === 'middle_initial' ? 'm.i.' : $h;
@@ -672,7 +677,7 @@ class MemberController extends Controller
             return redirect()
                 ->route('admin.members.index')
                 ->with('error', 'CSV is missing required columns: ' . implode(', ', $missing) .
-                    '. Expected: First Name, M.I., Last Name, Suffix, Contact Number, Club, Region, Position, Status, Paid Years.');
+                    '. Expected: First Name, M.I., Last Name, Suffix, Club, Region, Position, Status, Paid Years. Contact Number is optional.');
         }
 
         // Build column index map
@@ -742,7 +747,8 @@ class MemberController extends Controller
             $middleInitial = $row[$colMap['m.i.']] ?? '';
             $lastName = $row[$colMap['last_name']] ?? '';
             $suffix = $row[$colMap['suffix']] ?? '';
-            $contactNumber = $row[$colMap['contact_number']] ?? '';
+            // Contact Number column is optional; guard the index so missing columns don't emit warnings.
+            $contactNumber = isset($colMap['contact_number']) ? ($row[$colMap['contact_number']] ?? '') : '';
             $clubName = $row[$colMap['club']] ?? '';
             $regionName = $row[$colMap['region']] ?? '';
             $positionName = $row[$colMap['position']] ?? '';
@@ -842,13 +848,19 @@ class MemberController extends Controller
                     continue;
                 }
             } else {
-                // Check for exact duplicate (same first_name + last_name + contact_number in the same club)
-                $duplicate = Member::query()
+                // Check for exact duplicate in the same club. When the CSV provides a
+                // contact number, match on name + contact number; otherwise fall back to
+                // name-only matching (same rule as manual create/update).
+                $duplicateQuery = Member::query()
                     ->where('club_id', $resolvedClub->id)
                     ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($firstName))])
-                    ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))])
-                    ->where('contact_number', $contactNumber)
-                    ->first();
+                    ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($lastName))]);
+
+                if ($contactNumber !== '') {
+                    $duplicateQuery->where('contact_number', $contactNumber);
+                }
+
+                $duplicate = $duplicateQuery->first();
 
                 if ($duplicate) {
                     $skipped++;

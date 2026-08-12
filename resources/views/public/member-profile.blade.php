@@ -125,7 +125,7 @@
 
                                         <div class="bg-white/5 rounded-xl p-4 border border-white/5">
                                             <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{{ __('Contact Number') }}</p>
-                                            <p class="text-white font-semibold">{{ $member->contact_number ?? '-' }}</p>
+                                            <p class="text-white font-semibold">{{ $member->contact_number ?: '-' }}</p>
                                         </div>
                                     </div>
 

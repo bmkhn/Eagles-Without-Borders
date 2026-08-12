@@ -338,8 +338,8 @@
                                         name="contact_number"
                                         type="text"
                                         x-model="contactNumber"
-                                        required
                                         class="mt-1.5 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        placeholder="{{ __('(optional)') }}"
                                     />
                                     @error('contact_number')
                                         <x-input-error class="mt-1" :messages="[$message]" />

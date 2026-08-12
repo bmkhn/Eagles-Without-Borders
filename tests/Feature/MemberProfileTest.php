@@ -219,4 +219,15 @@ class MemberProfileTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee($this->activeMember->contact_number);
     }
+
+    /** @test */
+    public function active_member_profile_shows_dash_when_contact_number_is_empty(): void
+    {
+        $this->activeMember->update(['contact_number' => '']);
+
+        $response = $this->get(route('member.profile', $this->activeSlug));
+
+        $response->assertStatus(200);
+        $response->assertSee('<p class="text-white font-semibold">-</p>', false);
+    }
 }

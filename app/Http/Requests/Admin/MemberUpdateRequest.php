@@ -33,7 +33,7 @@ class MemberUpdateRequest extends FormRequest
                 'max:255',
             ],
             'suffix' => ['nullable', 'string', 'max:50'],
-            'contact_number' => ['required', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'remove_photo' => ['nullable', 'boolean'],
 
