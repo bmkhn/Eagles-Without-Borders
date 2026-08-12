@@ -5,13 +5,17 @@ on:
     branches:
       - main
 
+concurrency:
+  group: post-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Run Laravel deployment commands
-        uses: appleboy/ssh-action@v1.2.2
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -19,5 +23,24 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/u247912231/domains/eagleswithoutborders.com/public_html
-            php artisan migrate --force
-            php artisan optimize
+
+            # The hosting provider pulls the new code from GitHub asynchronously,
+            # while this workflow fires almost immediately after the push. Give the
+            # deploy a moment to settle and retry transient failures instead of
+            # failing the whole run (e.g. artisan hitting files mid-sync).
+            sleep 15
+
+            attempt=1
+            while [ $attempt -le 3 ]; do
+              echo "Post-deployment attempt $attempt of 3..."
+              if php artisan migrate --force && php artisan optimize; then
+                echo "Post-deployment commands completed successfully."
+                exit 0
+              fi
+              echo "Attempt $attempt failed, retrying in 20s..."
+              sleep 20
+              attempt=$((attempt + 1))
+            done
+
+            echo "All 3 attempts failed." >&2
+            exit 1
