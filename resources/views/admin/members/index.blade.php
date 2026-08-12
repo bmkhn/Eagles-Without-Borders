@@ -259,7 +259,21 @@
                             {{ __('The "Paid Years" column accepts comma-separated "year:date" entries (e.g. "2024:2024-01-15, 2025:2025-03-01" or just "2024" to use today\'s date).') }}
                         </p>
 
-                        <form method="POST" action="{{ route('admin.members.import') }}" enctype="multipart/form-data">
+                        <p class="text-xs text-amber-600 dark:text-amber-400 mb-4 flex items-start gap-1.5">
+                            <svg class="size-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>
+                                {{ __('Tip: keep the file name simple — letters, numbers, dashes and underscores only (e.g. members-import.csv). Some hosting providers block uploads when the file name contains spaces, apostrophes, or other special characters.') }}
+                            </span>
+                        </p>
+
+                        <form
+                            method="POST"
+                            action="{{ route('admin.members.import') }}"
+                            enctype="multipart/form-data"
+                            x-data="{ fileName: '', fileError: '' }"
+                        >
                             @csrf
                             <div class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
                                 <div class="flex-1 w-full sm:w-auto">
@@ -270,13 +284,24 @@
                                         type="file"
                                         accept=".csv,.txt"
                                         required
+                                        aria-describedby="import_file_error"
+                                        :aria-invalid="fileError !== ''"
+                                        @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''; fileError = /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(fileName) ? '' : 'This file name is not allowed. Rename it to use only letters, numbers, dashes or underscores (e.g. members-import.csv) - some hosting providers block spaces, apostrophes and special characters.'"
                                         class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                     />
+
+                                    <p id="import_file_error" x-show="fileError" x-cloak class="mt-2 text-xs font-medium text-red-600 dark:text-red-400 flex items-start gap-1.5" role="alert">
+                                        <svg class="size-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                        <span x-text="fileError"></span>
+                                    </p>
                                 </div>
                                 <div class="flex gap-2 shrink-0">
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 transition"
+                                        :disabled="fileError !== ''"
+                                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 border border-transparent rounded-md font-semibold text-xs text-white hover:bg-indigo-500 dark:hover:bg-indigo-400 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500"
                                     >
                                         <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
@@ -353,7 +378,7 @@
                                     </td>
 
                                     <td class="px-3 py-3.5 text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $member->contact_number }}
+                                        {{ $member->contact_number ?: '-' }}
                                     </td>
 
                                     <td class="px-3 py-3.5 text-sm text-gray-500 dark:text-gray-400 font-mono">

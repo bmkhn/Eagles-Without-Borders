@@ -83,9 +83,17 @@
                         },
                         validateProfilePicture($event) {
                             const file = $event.target.files[0];
-                            if (file && file.size > 2 * 1024 * 1024) {
-                                this.profilePictureError = true;
-                                $event.target.value = '';
+                            if (file) {
+                                const badName = !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(file.name);
+                                const tooLarge = file.size > 2 * 1024 * 1024;
+                                if (badName || tooLarge) {
+                                    this.profilePictureError = badName
+                                        ? 'File name not allowed. Use only letters, numbers, dashes and underscores (e.g. photo.jpg) - avoid spaces and special characters.'
+                                        : 'This file is too large. Maximum size is 2MB.';
+                                    $event.target.value = '';
+                                } else {
+                                    this.profilePictureError = false;
+                                }
                             } else {
                                 this.profilePictureError = false;
                             }
@@ -292,9 +300,9 @@
                                     @change="validateProfilePicture($event)"
                                     class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                 />
-                                <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB.') }}</p>
-                                <p x-show="profilePictureError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
-                                    {{ __('This file is too large. Maximum size is 2MB.') }}
+                                <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB. Use a simple file name (letters, numbers, dashes, underscores).') }}</p>
+                                <p x-show="profilePictureError" x-cloak role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                    <span x-text="profilePictureError"></span>
                                 </p>
                                 @error('profile_picture')
                                     <x-input-error class="mt-1" :messages="[$message]" />
@@ -316,9 +324,17 @@
                             },
                             validateCertificateFile($event, index) {
                                 const file = $event.target.files[0];
-                                if (file && file.size > 5 * 1024 * 1024) {
-                                    this.certificates[index].fileError = true;
-                                    $event.target.value = '';
+                                if (file) {
+                                    const badName = !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(file.name);
+                                    const tooLarge = file.size > 5 * 1024 * 1024;
+                                    if (badName || tooLarge) {
+                                        this.certificates[index].fileError = badName
+                                            ? 'File name not allowed. Use only letters, numbers, dashes and underscores (e.g. award.pdf) - avoid spaces and special characters.'
+                                            : 'This file is too large. Maximum size is 5MB.';
+                                        $event.target.value = '';
+                                    } else {
+                                        this.certificates[index].fileError = false;
+                                    }
                                 } else {
                                     this.certificates[index].fileError = false;
                                 }
@@ -389,13 +405,13 @@
                                                 :id="'certificates_' + index + '_file'"
                                                 :name="'certificates[' + index + '][file]'"
                                                 type="file"
-                                                accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image.webp"
+                                                accept=".pdf,image/jpeg,image/png,image/jpg,image/gif,image/webp"
                                                 @change="validateCertificateFile($event, index)"
                                                 class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                             />
-                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB.') }}</p>
-                                            <p x-show="cert.fileError" x-cloak class="mt-1 text-xs text-red-600 dark:text-red-400">
-                                                {{ __('This file is too large. Maximum size is 5MB.') }}
+                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB. Use a simple file name (letters, numbers, dashes, underscores).') }}</p>
+                                            <p x-show="cert.fileError" x-cloak role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
+                                                <span x-text="cert.fileError"></span>
                                             </p>
                                             @error('certificates.*.file')
                                                 <x-input-error class="mt-1" :messages="[$message]" />

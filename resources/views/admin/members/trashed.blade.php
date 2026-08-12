@@ -157,7 +157,7 @@
                                     <x-table-column>
                                         <div>
                                             <p class="font-medium text-gray-900 dark:text-gray-100">{{ $member->name }}</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $member->contact_number }}</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $member->contact_number ?: '-' }}</p>
                                         </div>
                                     </x-table-column>
                                     <x-table-column class="text-gray-700 dark:text-gray-300">
