@@ -18,6 +18,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /home/u247912231/domains/navajowhite-spoonbill-670073.hostingersite.com/public_html
+            cd /home/u247912231/domains/eagleswithoutborders.com/public_html
             php artisan migrate --force
             php artisan optimize
