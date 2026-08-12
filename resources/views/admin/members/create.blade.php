@@ -84,11 +84,11 @@
                         validateProfilePicture($event) {
                             const file = $event.target.files[0];
                             if (file) {
-                                const badName = !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(file.name);
+                                const badName = !/^[A-Za-z0-9][A-Za-z0-9 ._-]*$/.test(file.name);
                                 const tooLarge = file.size > 2 * 1024 * 1024;
                                 if (badName || tooLarge) {
                                     this.profilePictureError = badName
-                                        ? 'File name not allowed. Use only letters, numbers, dashes and underscores (e.g. photo.jpg) - avoid spaces and special characters.'
+                                        ? 'File name not allowed. Rename the file to remove special characters like apostrophes.'
                                         : 'This file is too large. Maximum size is 2MB.';
                                     $event.target.value = '';
                                 } else {
@@ -300,7 +300,7 @@
                                     @change="validateProfilePicture($event)"
                                     class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                 />
-                                <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB. Use a simple file name (letters, numbers, dashes, underscores).') }}</p>
+                                <p class="mt-1 text-xs text-gray-500">{{ __('Optional. JPEG, PNG, GIF, WebP. Max 2MB. Use a simple file name (no special characters like apostrophes).') }}</p>
                                 <p x-show="profilePictureError" x-cloak role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
                                     <span x-text="profilePictureError"></span>
                                 </p>
@@ -325,11 +325,11 @@
                             validateCertificateFile($event, index) {
                                 const file = $event.target.files[0];
                                 if (file) {
-                                    const badName = !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(file.name);
+                                    const badName = !/^[A-Za-z0-9][A-Za-z0-9 ._-]*$/.test(file.name);
                                     const tooLarge = file.size > 5 * 1024 * 1024;
                                     if (badName || tooLarge) {
                                         this.certificates[index].fileError = badName
-                                            ? 'File name not allowed. Use only letters, numbers, dashes and underscores (e.g. award.pdf) - avoid spaces and special characters.'
+                                            ? 'File name not allowed. Rename the file to remove special characters like apostrophes.'
                                             : 'This file is too large. Maximum size is 5MB.';
                                         $event.target.value = '';
                                     } else {
@@ -409,7 +409,7 @@
                                                 @change="validateCertificateFile($event, index)"
                                                 class="mt-1.5 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                             />
-                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB. Use a simple file name (letters, numbers, dashes, underscores).') }}</p>
+                                            <p class="mt-1 text-xs text-gray-500">{{ __('PDF, JPEG, PNG, GIF, WebP. Max 5MB. Use a simple file name (no special characters like apostrophes).') }}</p>
                                             <p x-show="cert.fileError" x-cloak role="alert" class="mt-1 text-xs text-red-600 dark:text-red-400">
                                                 <span x-text="cert.fileError"></span>
                                             </p>

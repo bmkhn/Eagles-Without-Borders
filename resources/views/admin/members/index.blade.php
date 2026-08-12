@@ -264,7 +264,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                             <span>
-                                {{ __('Tip: keep the file name simple — letters, numbers, dashes and underscores only (e.g. members-import.csv). Some hosting providers block uploads when the file name contains spaces, apostrophes, or other special characters.') }}
+                                {{ __('Tip: keep the file name simple — no apostrophes or other special characters (e.g. members-import.csv). Some hosting providers block such uploads.') }}
                             </span>
                         </p>
 
@@ -286,7 +286,7 @@
                                         required
                                         aria-describedby="import_file_error"
                                         :aria-invalid="fileError !== ''"
-                                        @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''; fileError = /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(fileName) ? '' : 'This file name is not allowed. Rename it to use only letters, numbers, dashes or underscores (e.g. members-import.csv) - some hosting providers block spaces, apostrophes and special characters.'"
+                                        @change="fileName = $event.target.files[0] ? $event.target.files[0].name : ''; fileError = /^[A-Za-z0-9][A-Za-z0-9 ._-]*$/.test(fileName) ? '' : 'This file name is not allowed. Rename the file to remove special characters like apostrophes.'"
                                         class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/30 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50"
                                     />
 
