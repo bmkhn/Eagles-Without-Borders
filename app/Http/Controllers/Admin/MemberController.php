@@ -24,15 +24,35 @@ use Intervention\Image\Drivers\Gd\Driver;
 
 class MemberController extends Controller
 {
-    public function index(): View
+    /**
+     * Whitelisted sort options for the member index (key => display label).
+     */
+    public const SORT_OPTIONS = [
+        'name' => 'Name (A–Z)',
+        'name_desc' => 'Name (Z–A)',
+        'club' => 'Club',
+        'region' => 'Region',
+        'position' => 'Position',
+        'status' => 'Status',
+        'created_at_desc' => 'Newest first',
+        'created_at' => 'Oldest first',
+    ];
+
+    public function index(): View|RedirectResponse
     {
         $user = request()->user();
+
+        // Remember the current index state (search, filters, sort, page) so that
+        // create/update/import/delete redirects can return to the same view.
+        session(['admin.members.index.query' => request()->query()]);
 
         $q = request()->string('q')->trim()->toString();
         $filterRegionId = request()->integer('region_id');
         $filterClubId = request()->integer('club_id');
         $filterStatus = request()->string('status')->trim()->toString();
         $filterPositionId = request()->integer('position_id');
+        $filterPhoto = request()->string('photo')->trim()->toString();
+        $sortBy = $this->normalizeSort(request()->string('sort')->trim()->toString());
 
         $isSuperAdmin = $user->hasRole('super-admin');
         $isNationalAdmin = $user->hasRole('national-admin');
@@ -70,6 +90,14 @@ class MemberController extends Controller
             $membersQuery->where('position_id', $filterPositionId);
         }
 
+        if ($filterPhoto === 'missing') {
+            $membersQuery->where(function ($query) {
+                $query->whereNull('profile_picture')->orWhere('profile_picture', '');
+            });
+        } elseif ($filterPhoto === 'has') {
+            $membersQuery->whereNotNull('profile_picture')->where('profile_picture', '!=', '');
+        }
+
         if ($q !== '') {
             $membersQuery->where(function ($query) use ($q) {
                 $query->where('first_name', 'like', '%' . $q . '%')
@@ -95,8 +123,18 @@ class MemberController extends Controller
         }
         $unfilteredTotal = (clone $unfilteredQuery)->count();
 
-        $members = $membersQuery->orderBy('last_name')->orderBy('first_name')
-            ->paginate(10)->withQueryString();
+        $this->applySort($membersQuery, $sortBy);
+
+        $members = $membersQuery->paginate(10)->withQueryString();
+
+        // If the requested page no longer exists (e.g. returning after an edit
+        // changed the result count), fall back to the last available page so the
+        // user is never dropped onto an empty page.
+        if ($members->isEmpty() && $members->currentPage() > 1) {
+            return redirect()->route('admin.members.index', array_merge(request()->query(), [
+                'page' => $members->lastPage(),
+            ]));
+        }
 
         $regions = ($isSuperAdmin || $isNationalAdmin) ? Region::query()->orderBy('name')->get() : collect();
         $clubsQuery = Club::query()->orderBy('name');
@@ -134,10 +172,13 @@ class MemberController extends Controller
         return view('admin.members.index', [
             'members' => $members,
             'q' => $q,
+            'sortBy' => $sortBy,
+            'sortOptions' => self::SORT_OPTIONS,
             'filterRegionId' => $filterRegionId,
             'filterClubId' => $filterClubId,
             'filterStatus' => $filterStatus,
             'filterPositionId' => $filterPositionId,
+            'filterPhoto' => $filterPhoto,
             'regions' => $regions,
             'clubs' => $clubs,
             'positions' => $positions,
@@ -174,6 +215,7 @@ class MemberController extends Controller
         return view('admin.members.create', [
             'clubs' => $clubs,
             'positions' => $positionsQuery->get(),
+            'indexQuery' => session('admin.members.index.query', []),
         ]);
     }
 
@@ -351,9 +393,7 @@ class MemberController extends Controller
             ? 'Member created successfully with ' . $paymentsRecorded . ' payment(s) recorded.'
             : 'Member created successfully.';
 
-        return redirect()
-            ->route('admin.members.index')
-            ->with('success', $successMessage);
+        return $this->redirectToIndex(['success' => $successMessage]);
     }
 
     public function edit(Member $member): View
@@ -380,6 +420,7 @@ class MemberController extends Controller
             'member' => $member->load(['club', 'position', 'certificates', 'payments']),
             'clubs' => $clubs,
             'positions' => $positionsQuery->get(),
+            'indexQuery' => session('admin.members.index.query', []),
         ]);
     }
 
@@ -504,9 +545,7 @@ class MemberController extends Controller
                 ->log('updated');
         }
 
-        return redirect()
-            ->route('admin.members.index')
-            ->with('success', 'Member updated successfully.');
+        return $this->redirectToIndex(['success' => 'Member updated successfully.']);
     }
 
     /**
@@ -521,15 +560,17 @@ class MemberController extends Controller
         $filterClubId = request()->integer('club_id');
         $filterStatus = request()->string('status')->trim()->toString();
         $filterPositionId = request()->integer('position_id');
+        $filterPhoto = request()->string('photo')->trim()->toString();
 
         $isSuperAdmin = $user->hasRole('super-admin');
         $isNationalAdmin = $user->hasRole('national-admin');
         $isClubAdmin = $user->hasRole('club-admin') && $user->club_id;
         $isRegionalAdmin = $user->hasRole('regional-admin') && $user->region_id;
 
+        $sortBy = $this->normalizeSort(request()->string('sort')->trim()->toString());
+
         $membersQuery = Member::query()
-            ->with(['club.region', 'position', 'payments'])
-            ->orderBy('last_name')->orderBy('first_name');
+            ->with(['club.region', 'position', 'payments']);
 
         // Role scoping
         if ($isClubAdmin) {
@@ -557,6 +598,14 @@ class MemberController extends Controller
             $membersQuery->where('position_id', $filterPositionId);
         }
 
+        if ($filterPhoto === 'missing') {
+            $membersQuery->where(function ($query) {
+                $query->whereNull('profile_picture')->orWhere('profile_picture', '');
+            });
+        } elseif ($filterPhoto === 'has') {
+            $membersQuery->whereNotNull('profile_picture')->where('profile_picture', '!=', '');
+        }
+
         if ($q !== '') {
             $membersQuery->where(function ($query) use ($q) {
                 $query->where('first_name', 'like', '%' . $q . '%')
@@ -567,6 +616,8 @@ class MemberController extends Controller
                     ->orWhere('slug', 'like', '%' . $q . '%');
             });
         }
+
+        $this->applySort($membersQuery, $sortBy);
 
         $members = $membersQuery->get();
 
@@ -580,6 +631,7 @@ class MemberController extends Controller
                     'club_id' => $filterClubId ?: null,
                     'status' => $filterStatus ?: null,
                     'position_id' => $filterPositionId ?: null,
+                    'photo' => $filterPhoto ?: null,
                 ]),
             ])
             ->log('exported_members');
@@ -656,9 +708,7 @@ class MemberController extends Controller
         $header = fgetcsv($handle);
         if (!$header) {
             fclose($handle);
-            return redirect()
-                ->route('admin.members.index')
-                ->with('error', 'The CSV file appears to be empty or invalid.');
+            return $this->redirectToIndex(['error' => 'The CSV file appears to be empty or invalid.']);
         }
 
         // Normalize headers
@@ -674,10 +724,8 @@ class MemberController extends Controller
         $missing = array_diff($expectedHeaders, $normalizedHeaders);
         if (!empty($missing)) {
             fclose($handle);
-            return redirect()
-                ->route('admin.members.index')
-                ->with('error', 'CSV is missing required columns: ' . implode(', ', $missing) .
-                    '. Expected: First Name, M.I., Last Name, Suffix, Club, Region, Position, Status, Paid Years. Contact Number is optional.');
+            return $this->redirectToIndex(['error' => 'CSV is missing required columns: ' . implode(', ', $missing) .
+                '. Expected: First Name, M.I., Last Name, Suffix, Club, Region, Position, Status, Paid Years. Contact Number is optional.']);
         }
 
         // Build column index map
@@ -713,9 +761,7 @@ class MemberController extends Controller
             $userClubName = $userClub?->name;
             foreach ($csvClubNames as $csvClubName) {
                 if ($csvClubName !== $userClubName) {
-                    return redirect()
-                        ->route('admin.members.index')
-                        ->with('error', "Club admins can only import members into their own club ('{$userClubName}'). The CSV references '{$csvClubName}'.");
+                    return $this->redirectToIndex(['error' => "Club admins can only import members into their own club ('{$userClubName}'). The CSV references '{$csvClubName}'."]);
                 }
             }
         }
@@ -725,9 +771,7 @@ class MemberController extends Controller
             $regionClubNames = Club::where('region_id', $user->region_id)->pluck('name')->all();
             foreach ($csvClubNames as $csvClubName) {
                 if (!in_array($csvClubName, $regionClubNames)) {
-                    return redirect()
-                        ->route('admin.members.index')
-                        ->with('error', "Regional admins can only import members into clubs within their region ('{$userRegion?->name}'). The CSV references '{$csvClubName}' which is not in your region.");
+                    return $this->redirectToIndex(['error' => "Regional admins can only import members into clubs within their region ('{$userRegion?->name}'). The CSV references '{$csvClubName}' which is not in your region."]);
                 }
             }
         }
@@ -942,9 +986,7 @@ class MemberController extends Controller
 
         $flashType = !empty($errors) ? 'error' : 'success';
 
-        return redirect()
-            ->route('admin.members.index')
-            ->with($flashType, $message);
+        return $this->redirectToIndex([$flashType => $message]);
     }
 
     /**
@@ -1135,9 +1177,7 @@ class MemberController extends Controller
 
         $member->delete(); // soft delete
 
-        return redirect()
-            ->route('admin.members.index')
-            ->with('success', 'Member moved to trash.');
+        return $this->redirectToIndex(['success' => 'Member moved to trash.']);
     }
 
     /**
@@ -1285,6 +1325,66 @@ class MemberController extends Controller
         return back()
             ->withErrors(['first_name' => "A member named '{$duplicateName}' already has a profile in {$location} as {$position}. You cannot {$verb} a member with the same name in the same club."])
             ->withInput();
+    }
+
+    /**
+     * Redirect back to the member index, preserving the last seen index state
+     * (search, filters, sort, and page) so the user isn't dropped onto a fresh list.
+     */
+    private function redirectToIndex(array $with = []): RedirectResponse
+    {
+        return redirect()
+            ->route('admin.members.index', session('admin.members.index.query', []))
+            ->with($with);
+    }
+
+    /**
+     * Normalize the requested sort key against the whitelist of allowed options.
+     */
+    private function normalizeSort(string $sort): string
+    {
+        return array_key_exists($sort, self::SORT_OPTIONS) ? $sort : 'name';
+    }
+
+    /**
+     * Apply the requested ordering to the members query. Related-column sorts
+     * (club, region, position) use left joins so members without those records
+     * (e.g. the National President) are still included.
+     */
+    private function applySort($query, string $sort): void
+    {
+        switch ($sort) {
+            case 'name_desc':
+                $query->orderByDesc('members.last_name')->orderByDesc('members.first_name');
+                break;
+            case 'club':
+                $query->leftJoin('clubs', 'clubs.id', '=', 'members.club_id')
+                    ->select('members.*')
+                    ->orderBy('clubs.name')->orderBy('members.last_name')->orderBy('members.first_name');
+                break;
+            case 'region':
+                $query->leftJoin('clubs', 'clubs.id', '=', 'members.club_id')
+                    ->leftJoin('regions', 'regions.id', '=', 'clubs.region_id')
+                    ->select('members.*')
+                    ->orderBy('regions.name')->orderBy('members.last_name')->orderBy('members.first_name');
+                break;
+            case 'position':
+                $query->leftJoin('positions', 'positions.id', '=', 'members.position_id')
+                    ->select('members.*')
+                    ->orderBy('positions.name')->orderBy('members.last_name')->orderBy('members.first_name');
+                break;
+            case 'status':
+                $query->orderBy('members.status')->orderBy('members.last_name')->orderBy('members.first_name');
+                break;
+            case 'created_at':
+                $query->orderBy('members.created_at');
+                break;
+            case 'created_at_desc':
+                $query->orderByDesc('members.created_at');
+                break;
+            default: // 'name'
+                $query->orderBy('members.last_name')->orderBy('members.first_name');
+        }
     }
 
     /**

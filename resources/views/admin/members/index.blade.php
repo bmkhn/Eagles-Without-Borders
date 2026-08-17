@@ -7,6 +7,7 @@
 
             <a
                 href="{{ route('admin.members.create') }}"
+                data-save-scroll
                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-indigo-500 active:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
                 {{ __('Create Member') }}
@@ -28,7 +29,7 @@
                 <x-card title="Search & Manage" class="mb-6">
                     <!-- Member Count + Import/Export -->
                     <div class="mb-5 flex items-center gap-3 flex-wrap">
-                        @php $hasFilters = $q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId; @endphp
+                        @php $hasFilters = $q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId || $filterPhoto !== ''; @endphp
 
                         <div class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                             <svg class="size-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,7 +73,7 @@
                                     <p class="whitespace-nowrap">{{ __('Sample: Download an example CSV with the correct format to use as a template for imports.') }}</p>
                                     <p class="whitespace-nowrap">{{ __('Import: Upload a CSV file to add members. Clubs are resolved from the CSV.') }}</p>
                                     <p class="whitespace-nowrap">{{ __('Duplicates are skipped. Scoped admins can only import within their scope.') }}</p>
-                                    <p class="whitespace-nowrap">{{ __('Export: Download a CSV of the members shown on this page (applies your search and filters).') }}</p>
+                                    <p class="whitespace-nowrap">{{ __('Export: Download a CSV of the members shown on this page (applies your search, filters, and sort).') }}</p>
                                     <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                                 </div>
                             </div>
@@ -113,7 +114,9 @@
                         </div>
                     </div>
 
-                    <form method="GET" action="{{ route('admin.members.index') }}" class="mb-4" x-data="{ submitting: false }" @submit="submitting = true">
+                    <form method="GET" action="{{ route('admin.members.index') }}" class="mb-4" x-data="{ submitting: false, photoFilter: '{{ $filterPhoto }}' }" @submit="submitting = true">
+                        <input type="hidden" name="photo" :value="photoFilter">
+
                         <!-- Search row -->
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
                             <div class="flex-1">
@@ -130,7 +133,40 @@
                                 >
                             </div>
 
-                            <div class="flex gap-2">
+                            <div class="flex flex-wrap items-end gap-2">
+                                <div>
+                                    <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        {{ __('Sort by') }}
+                                    </label>
+                                    <select
+                                        id="sort"
+                                        name="sort"
+                                        class="mt-1 block w-44 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                        onchange="this.form.submit()"
+                                    >
+                                        @foreach($sortOptions as $sortValue => $sortLabel)
+                                            <option value="{{ $sortValue }}" @selected($sortBy === $sortValue)>{{ $sortLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    @click="photoFilter = photoFilter === 'missing' ? '' : 'missing'"
+                                    :class="photoFilter === 'missing'
+                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'"
+                                    class="inline-flex items-center gap-1.5 px-3 py-2 border rounded-md font-semibold text-sm transition"
+                                    :aria-pressed="photoFilter === 'missing'"
+                                    title="{{ __('Show only members without a profile picture') }}"
+                                >
+                                    <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 7H17a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span>{{ __('No photo') }}</span>
+                                </button>
+
                                 <button
                                     type="submit"
                                     x-bind:disabled="submitting"
@@ -144,7 +180,7 @@
                                     <span x-show="submitting" x-cloak>{{ __('Searching...') }}</span>
                                 </button>
 
-                                @if($q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId)
+                                @if($q !== '' || $filterRegionId || $filterClubId || $filterStatus !== '' || $filterPositionId || $filterPhoto !== '')
                                     <a
                                         href="{{ route('admin.members.index') }}"
                                         class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 active:bg-gray-100"
@@ -401,6 +437,7 @@
 
                                             <a
                                                 href="{{ route('admin.members.edit', $member) }}"
+                                                data-save-scroll
                                                 class="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md text-xs font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
                                             >
                                                 {{ __('Edit') }}
@@ -415,6 +452,7 @@
                                                 button-text="{{ __('Delete') }}"
                                                 button-class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50"
                                                 type="soft"
+                                                data-save-scroll
                                             >
                                                 {{ __('Delete') }}
                                             </x-confirm-delete-modal>
@@ -432,4 +470,36 @@
             </div>
         </div>
     </div>
+
+    <script>
+        (function () {
+            var KEY = 'members-index-scroll';
+
+            // Remember where the user was before opening create/edit so we can
+            // return to the same spot after saving.
+            document.addEventListener('click', function (e) {
+                var link = e.target.closest ? e.target.closest('[data-save-scroll]') : null;
+                if (link) {
+                    sessionStorage.setItem(KEY, String(window.scrollY));
+                }
+            });
+
+            // Browser back/forward restores scroll natively — drop any stale marker.
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) {
+                    sessionStorage.removeItem(KEY);
+                }
+            });
+
+            var saved = sessionStorage.getItem(KEY);
+            if (saved !== null) {
+                sessionStorage.removeItem(KEY);
+                window.addEventListener('load', function () {
+                    window.setTimeout(function () {
+                        window.scrollTo(0, parseInt(saved, 10) || 0);
+                    }, 50);
+                });
+            }
+        })();
+    </script>
 </x-app-layout>

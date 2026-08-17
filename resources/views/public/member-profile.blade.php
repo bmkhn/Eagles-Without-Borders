@@ -118,15 +118,17 @@
                                     @endif
 
                                     <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                                        <div class="bg-white/5 rounded-xl p-4 border border-white/5 @auth sm:col-span-1 @else sm:col-span-2 @endauth">
                                             <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{{ __('Club') }}</p>
                                             <p class="text-white font-semibold">{{ optional($member->club)->name ?? '-' }}</p>
                                         </div>
 
-                                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
-                                            <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{{ __('Contact Number') }}</p>
-                                            <p class="text-white font-semibold">{{ $member->contact_number ?: '-' }}</p>
-                                        </div>
+                                        @auth
+                                            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                                                <p class="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">{{ __('Contact Number') }}</p>
+                                                <p class="text-white font-semibold">{{ $member->contact_number ?: '-' }}</p>
+                                            </div>
+                                        @endauth
                                     </div>
 
                                     @if($member->club && $member->club->region)
@@ -136,30 +138,32 @@
                                         </div>
                                     @endif
 
-                                    {{-- Payments Section --}}
+                                    {{-- Payments Section (only visible to logged-in users) --}}
                                     @php
                                         $paidYears = $member->payments ? $member->payments->pluck('year_paid')->sort()->values()->toArray() : [];
                                     @endphp
-                                    @if(!empty($paidYears))
-                                        <div class="mt-8">
-                                            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                                <svg class="size-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                                </svg>
-                                                {{ __('Membership Years') }}
-                                            </h2>
-                                            <div class="flex flex-wrap gap-2">
-                                                @foreach($paidYears as $year)
-                                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-semibold">
-                                                        <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                        </svg>
-                                                        {{ $year }}
-                                                    </span>
-                                                @endforeach
+                                    @auth
+                                        @if(!empty($paidYears))
+                                            <div class="mt-8">
+                                                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                                    <svg class="size-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                    </svg>
+                                                    {{ __('Membership Years') }}
+                                                </h2>
+                                                <div class="flex flex-wrap gap-2">
+                                                    @foreach($paidYears as $year)
+                                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-semibold">
+                                                            <svg class="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                            </svg>
+                                                            {{ $year }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
                                             </div>
-                                        </div>
-                                    @endif
+                                        @endif
+                                    @endauth
 
                                     @if($member->certificates && $member->certificates->count() > 0)
                                         <div class="mt-8">

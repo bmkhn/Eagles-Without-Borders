@@ -72,18 +72,38 @@ class MemberProfileTest extends TestCase
     }
 
     /** @test */
-    public function active_member_profile_shows_membership_years(): void
+    public function active_member_profile_hides_membership_years_from_guests(): void
     {
-        // Give the active member a payment record
+        // Give the active member a payment record for a past year (the current
+        // year also appears in the footer copyright, so use a non-current year).
         Payment::factory()->create([
             'member_id' => $this->activeMember->id,
-            'year_paid' => (int) now()->year,
+            'year_paid' => now()->subYear()->year,
         ]);
 
         $response = $this->get(route('member.profile', $this->activeSlug));
 
         $response->assertStatus(200);
-        $response->assertSee((string) now()->year);
+        $response->assertDontSee('Membership Years');
+        $response->assertDontSee((string) now()->subYear()->year);
+    }
+
+    /** @test */
+    public function active_member_profile_shows_membership_years_to_authenticated_users(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Payment::factory()->create([
+            'member_id' => $this->activeMember->id,
+            'year_paid' => now()->subYear()->year,
+        ]);
+
+        $response = $this->get(route('member.profile', $this->activeSlug));
+
+        $response->assertStatus(200);
+        $response->assertSee('Membership Years');
+        $response->assertSee((string) now()->subYear()->year);
     }
 
     /** @test */
@@ -212,22 +232,40 @@ class MemberProfileTest extends TestCase
     }
 
     /** @test */
-    public function active_member_profile_shows_contact_number(): void
+    public function active_member_profile_hides_contact_number_from_guests(): void
     {
         $response = $this->get(route('member.profile', $this->activeSlug));
 
         $response->assertStatus(200);
+        $response->assertDontSee('Contact Number');
+        $response->assertDontSee($this->activeMember->contact_number);
+    }
+
+    /** @test */
+    public function active_member_profile_shows_contact_number_to_authenticated_users(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get(route('member.profile', $this->activeSlug));
+
+        $response->assertStatus(200);
+        $response->assertSee('Contact Number');
         $response->assertSee($this->activeMember->contact_number);
     }
 
     /** @test */
-    public function active_member_profile_shows_dash_when_contact_number_is_empty(): void
+    public function active_member_profile_shows_dash_to_authenticated_users_when_contact_number_is_empty(): void
     {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
         $this->activeMember->update(['contact_number' => '']);
 
         $response = $this->get(route('member.profile', $this->activeSlug));
 
         $response->assertStatus(200);
+        $response->assertSee('Contact Number');
         $response->assertSee('<p class="text-white font-semibold">-</p>', false);
     }
 }
