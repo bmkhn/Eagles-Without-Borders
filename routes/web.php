@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return view('welcome');
@@ -9,6 +10,26 @@ Route::get('/', function () {
 
 Route::get('/member-profile/{slug}', [\App\Http\Controllers\MemberProfileController::class, 'show'])
     ->name('member.profile');
+
+// Fallback file server for /storage/* URLs. Normally these are served as static
+// files through the public/storage symlink (php artisan storage:link), but on
+// shared hosts like Hostinger that symlink can go missing (it is gitignored, so
+// deployments can remove it). When the symlink is missing, requests fall through
+// to the front controller and this route serves the file from the public disk
+// instead, so profile pictures and certificates keep loading either way.
+Route::get('/storage/{path}', function (string $path) {
+    if (str_starts_with($path, '/') || str_contains($path, '..')) {
+        abort(404);
+    }
+
+    $disk = Storage::disk('public');
+
+    abort_unless($disk->fileExists($path), 404);
+
+    return $disk->response($path, null, [
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->where('path', '.*')->name('storage.file');
 
 Route::get('/dashboard', function () {
     return redirect()->route('admin.dashboard');

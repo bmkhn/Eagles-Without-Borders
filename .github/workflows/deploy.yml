@@ -33,7 +33,9 @@ jobs:
             attempt=1
             while [ $attempt -le 3 ]; do
               echo "Post-deployment attempt $attempt of 3..."
-              if php artisan migrate --force && php artisan optimize; then
+              # storage:link recreates the public/storage symlink that Hostinger's
+              # git sync can remove; --force keeps it pointing at the right target.
+              if php artisan storage:link --force && php artisan migrate --force && php artisan optimize; then
                 echo "Post-deployment commands completed successfully."
                 exit 0
               fi

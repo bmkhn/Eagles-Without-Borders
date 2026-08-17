@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -196,24 +197,52 @@ class CertificateController extends Controller
         $extension = $file->getClientOriginalExtension() ?: 'pdf';
         $filename = uniqid('cert_') . '.' . $extension;
 
-        return $file->storeAs('certificates', $filename, 'public');
+        $path = $file->storeAs('certificates', $filename, 'public');
+
+        if (!$path) {
+            throw ValidationException::withMessages([
+                'file' => 'The certificate file could not be saved. Please try again.',
+            ]);
+        }
+
+        return $path;
     }
 
     /**
      * Store and optimize an uploaded image.
+     *
+     * Verifies the file actually landed on disk before returning its path so a
+     * failed write (the public disk is configured with throw=false) can never
+     * leave the database pointing at a file that does not exist.
      */
     private function optimizeAndStoreImage(UploadedFile $file, string $directory, int $maxWidth = 1200, int $maxHeight = 1200, int $quality = 70): string
     {
-        $manager = new ImageManager(new Driver());
-        $image = $manager->decode($file);
+        try {
+            $manager = new ImageManager(new Driver());
+            $image = $manager->decode($file);
 
-        $image->scale(width: $maxWidth, height: $maxHeight);
+            $image->scale(width: $maxWidth, height: $maxHeight);
+
+            $encoded = $image->encode(new WebpEncoder(quality: $quality));
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'file' => 'The image could not be processed. Please try a different file.',
+            ]);
+        }
 
         $filename = uniqid('img_') . '.webp';
         $path = $directory . '/' . $filename;
 
-        $encoded = $image->encode(new WebpEncoder(quality: $quality));
-        Storage::disk('public')->put($path, $encoded);
+        $disk = Storage::disk('public');
+        $written = $disk->put($path, $encoded);
+
+        if (!$written || !$disk->fileExists($path)) {
+            $disk->delete($path);
+
+            throw ValidationException::withMessages([
+                'file' => 'The image could not be saved. Please try again.',
+            ]);
+        }
 
         return $path;
     }
