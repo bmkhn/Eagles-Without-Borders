@@ -41,6 +41,13 @@ jobs:
               ln -s ../storage/app/public public/storage
             fi
 
+            # Uploads (profile pictures, certificates) live outside the synced
+            # folder so deployments can't delete them. Ensure the location
+            # exists and the app knows where it is -- PUBLIC_DISK_ROOT is picked
+            # up when config is cached below.
+            mkdir -p /home/u247912231/storage/app/public
+            grep -q '^PUBLIC_DISK_ROOT=' .env || echo 'PUBLIC_DISK_ROOT=/home/u247912231/storage/app/public' >> .env
+
             attempt=1
             while [ $attempt -le 3 ]; do
               echo "Post-deployment attempt $attempt of 3..."
