@@ -29,8 +29,10 @@ class MemberController extends Controller
      * Whitelisted sort options for the member index (key => display label).
      */
     public const SORT_OPTIONS = [
-        'name' => 'Name (A–Z)',
-        'name_desc' => 'Name (Z–A)',
+        'last_name_asc' => 'Last Name (A–Z)',
+        'last_name_desc' => 'Last Name (Z–A)',
+        'first_name_asc' => 'First Name (A–Z)',
+        'first_name_desc' => 'First Name (Z–A)',
         'club' => 'Club',
         'region' => 'Region',
         'position' => 'Position',
@@ -1344,7 +1346,16 @@ class MemberController extends Controller
      */
     private function normalizeSort(string $sort): string
     {
-        return array_key_exists($sort, self::SORT_OPTIONS) ? $sort : 'name';
+        // Legacy keys from before the sort was split into separate last/first name options.
+        if ($sort === 'name') {
+            return 'last_name_asc';
+        }
+
+        if ($sort === 'name_desc') {
+            return 'last_name_desc';
+        }
+
+        return array_key_exists($sort, self::SORT_OPTIONS) ? $sort : 'last_name_asc';
     }
 
     /**
@@ -1355,8 +1366,17 @@ class MemberController extends Controller
     private function applySort($query, string $sort): void
     {
         switch ($sort) {
-            case 'name_desc':
+            case 'last_name_asc':
+                $query->orderBy('members.last_name')->orderBy('members.first_name');
+                break;
+            case 'last_name_desc':
                 $query->orderByDesc('members.last_name')->orderByDesc('members.first_name');
+                break;
+            case 'first_name_asc':
+                $query->orderBy('members.first_name')->orderBy('members.last_name');
+                break;
+            case 'first_name_desc':
+                $query->orderByDesc('members.first_name')->orderByDesc('members.last_name');
                 break;
             case 'club':
                 $query->leftJoin('clubs', 'clubs.id', '=', 'members.club_id')
@@ -1383,7 +1403,7 @@ class MemberController extends Controller
             case 'created_at_desc':
                 $query->orderByDesc('members.created_at');
                 break;
-            default: // 'name'
+            default: // 'last_name_asc'
                 $query->orderBy('members.last_name')->orderBy('members.first_name');
         }
     }
