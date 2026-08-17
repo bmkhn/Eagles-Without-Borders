@@ -33,7 +33,10 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Keep the framework from auto-registering a /storage/{path} serve
+            // route for the private disk -- it would shadow our public fallback
+            // route and 404 every image request unless given a signed URL.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
